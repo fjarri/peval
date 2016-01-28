@@ -22,7 +22,7 @@ class PyTest(TestCommand):
 
 setup(
     name="peval",
-    version="0.1.0+dev",
+    version="0.1.0",
     description="Partial evaluation on AST level",
     long_description=open("README.rst").read(),
     url="https://github.com/fjarri/peval",
