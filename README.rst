@@ -6,11 +6,11 @@ Partial evaluation of Python code
     :target: http://peval.readthedocs.org/en/latest/?badge=latest
     :alt: Documentation status
 
-.. image:: https://travis-ci.org/fjarri/peval.png?branch=master
+.. image:: https://travis-ci.org/fjarri/peval.svg?branch=develop
     :target: https://travis-ci.org/fjarri/peval
     :alt: Tests status
 
-.. image:: https://coveralls.io/repos/fjarri/peval/badge.png?branch=master
+.. image:: https://coveralls.io/repos/fjarri/peval/badge.svg?branch=develop
     :target: https://coveralls.io/r/fjarri/peval
     :alt: Coverage status
 
