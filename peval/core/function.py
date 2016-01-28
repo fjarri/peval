@@ -390,7 +390,9 @@ def has_nodes(node, node_types):
 
 
 def has_nested_definitions(function):
-    return has_nodes(function.tree.body, (ast.FunctionDef, ast.ClassDef, ast.Lambda))
+    return has_nodes(
+        function.tree.body,
+        (ast.AsyncFunctionDef, ast.FunctionDef, ast.ClassDef, ast.Lambda))
 
 
 def is_a_generator(function):
