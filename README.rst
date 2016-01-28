@@ -2,10 +2,16 @@
 Partial evaluation of Python code
 *********************************
 
+.. image:: https://readthedocs.org/projects/peval/badge/?version=latest
+    :target: http://peval.readthedocs.org/en/latest/?badge=latest
+    :alt: Documentation status
+
 .. image:: https://travis-ci.org/fjarri/peval.png?branch=master
     :target: https://travis-ci.org/fjarri/peval
+    :alt: Tests status
 
 .. image:: https://coveralls.io/repos/fjarri/peval/badge.png?branch=master
     :target: https://coveralls.io/r/fjarri/peval
+    :alt: Coverage status
 
 Read more at the `project documentation page <http://peval.readthedocs.org>`_.
