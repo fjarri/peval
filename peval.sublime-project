@@ -1,0 +1,15 @@
+{
+	"folders":
+	[
+		{
+            "folder_exclude_patterns":
+            [
+                "*.egg-info",
+                "__pycache__",
+                "htmlcov"
+            ],
+			"follow_symlinks": true,
+			"path": "./"
+		}
+	]
+}

@@ -1,0 +1,8 @@
+.coverage
+*.pyc
+peval.egg-info/
+env/
+build/
+dist/
+htmlcov/
+*.sublime-workspace
