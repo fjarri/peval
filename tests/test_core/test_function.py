@@ -8,34 +8,7 @@ import inspect
 from peval.core.function import Function
 from peval.tools import unindent
 
-from tests.utils import normalize_source
-
-
-def function_from_source(source, globals_=None):
-    """
-    A helper function to construct a Function object from a source
-    with custom __future__ imports.
-    """
-
-    module = ast.parse(unindent(source))
-    ast.fix_missing_locations(module)
-
-    for stmt in module.body:
-        if type(stmt) == ast.FunctionDef:
-            tree = stmt
-            name = stmt.name
-            break
-    else:
-        raise ValueError("No function definitions found in the provided source")
-
-    code_object = compile(module, '<nofile>', 'exec', dont_inherit=True)
-    locals_ = {}
-    eval(code_object, globals_, locals_)
-
-    function_obj = locals_[name]
-    function_obj._peval_source = astunparse.unparse(tree)
-
-    return Function.from_object(function_obj)
+from tests.utils import normalize_source, function_from_source
 
 
 global_var = 1
