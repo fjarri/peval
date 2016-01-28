@@ -83,3 +83,4 @@ API reference
 =============
 
 .. automodule:: peval
+    :members:
