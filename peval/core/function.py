@@ -36,7 +36,7 @@ def eval_function_def(function_def, globals_=None, flags=None):
     Returns a callable function (a ``types.FunctionType`` object).
     """
 
-    assert type(function_def) == ast.FunctionDef
+    assert type(function_def) in (ast.FunctionDef, ast.AsyncFunctionDef)
 
     # Making a copy before mutating
     module = ast.Module(body=[copy.deepcopy(function_def)])
@@ -66,8 +66,9 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
         (filled with ``None``) must be substituted by actual closure cells
         that will be used during the call.
     """
+    def_type = type(function_def)
+    assert def_type in (ast.FunctionDef, ast.AsyncFunctionDef)
 
-    assert type(function_def) == ast.FunctionDef
     none = ast.NameConstant(value=None)
 
     # We can't possibly recreate ASTs of existing closure variables
@@ -90,7 +91,7 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
         defaults=[],
         kw_defaults=[])
 
-    wrapper_def = ast.FunctionDef(
+    wrapper_def = def_type(
         name='__peval_wrapper',
         args=empty_args,
         decorator_list=[],
@@ -168,23 +169,22 @@ def filter_arguments(arguments, bound_argnames):
 
 def filter_function_def(function_def, bound_argnames):
     """
-    Filters a node containing a function definition (an ``ast.FunctionDef`` object)
+    Filters a node containing a function definition
+    (an ``ast.FunctionDef`` or an ``ast.AsyncFunctionDef`` object)
     to exclude all arguments with the names present in ``bound_arguments``.
     Returns the new ``ast.arguments`` node.
     """
-
-    assert type(function_def) == ast.FunctionDef
+    def_type = type(function_def)
+    assert def_type in (ast.FunctionDef, ast.AsyncFunctionDef)
 
     new_args = filter_arguments(function_def.args, bound_argnames)
 
-    params = dict(
+    return def_type(
         name=function_def.name,
         args=new_args,
         body=function_def.body,
         decorator_list=function_def.decorator_list,
         returns=function_def.returns)
-
-    return ast.FunctionDef(**params)
 
 
 class Function(object):
