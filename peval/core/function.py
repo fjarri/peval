@@ -19,10 +19,15 @@ from peval.core.scope import analyze_scope
 
 SOURCE_ATTRIBUTE = '_peval_source'
 
-
-FUTURE_NAMES = (
-    'generator_stop',
-    )
+if sys.version_info[:2] >= (3, 5):
+    FUTURE_NAMES = (
+        'generator_stop',
+        )
+else:
+    # peval supports Python 3.5+, but readthedocs runs Python 3.4,
+    # and needs to import our module in order to pick up docstrings,
+    # and ``generator_stop`` did not exist back then.
+    FUTURE_NAMES = ()
 
 FUTURE_FEATURES = dict((name, getattr(__future__, name)) for name in FUTURE_NAMES)
 
