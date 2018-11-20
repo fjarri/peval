@@ -134,6 +134,7 @@ There are immutable data structure libraries that may be faster, e.g.:
 
 * https://github.com/zhemao/funktown
 * https://pythonhosted.org/pysistence/
+* https://github.com/tobgu/pyrsistent (currently active)
 
 Alternatively, the embedded implementation can be optimized to reuse data instead of just making copies every time.
 
