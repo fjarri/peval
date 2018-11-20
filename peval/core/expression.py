@@ -784,6 +784,12 @@ def peval_expression(node, gen_sym, bindings):
 
 
 def try_peval_expression(node, bindings):
+    """
+    Try to partially evaluate the AST expression ``node`` using the dictionary ``bindings``.
+    Returns a pair ``(evaluated, result)``, where ``evaluated`` is a boolean
+    and ``result`` is the evaulation result if ``evaluated`` is ``True``,
+    and an AST expression otherwise.
+    """
 
     gen_sym = GenSym()
     eval_result, gen_sym = peval_expression(node, gen_sym, bindings)
