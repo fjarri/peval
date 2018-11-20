@@ -196,9 +196,22 @@ class Function(object):
     """
     A wrapper for functions providing transformations to and from AST
     and simplifying operations with associated global and closure variables.
+
+    .. attribute:: tree
+
+        An AST tree of the function (including the header and decorators, if any)
+
+    .. attribute:: globals
+
+        A dictionary of global variables associated with the function.
+
+    .. attribute:: closure_vals
+
+        A dictionary of closure variables associated with the function.
     """
 
     def __init__(self, tree, globals_, closure_vals, compiler_flags):
+
         self.tree = tree
         self.globals = globals_
         self.closure_vals = closure_vals
@@ -228,6 +241,9 @@ class Function(object):
         return variables
 
     def get_source(self):
+        """
+        Generates the function's source code based on its tree.
+        """
         return astunparse.unparse(self.tree)
 
     @classmethod

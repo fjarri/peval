@@ -10,19 +10,19 @@ class Dispatcher:
 
     ``handler_obj`` can be either a function with the signature::
 
-            def handler(node, *args, **kwds)
+        def handler(*args, **kwds)
 
     or a class with the static methods::
 
         @staticmethod
-        def handle_<tp>(node, *args, **kwds)
+        def handle_<tp>(*args, **kwds)
 
     where ``<tp>`` is the name of the type that this function will handle
     (e.g., ``handle_FunctionDef`` for ``ast.FunctionDef``).
     The class can also define the default handler::
 
         @staticmethod
-        def handle(node, *args, **kwds)
+        def handle(*args, **kwds)
 
     If it is not defined, the ``default_handler`` value will be used
     (which must be a function with the same signature as above).
