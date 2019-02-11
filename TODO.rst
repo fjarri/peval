@@ -7,6 +7,8 @@ General
 
 * IMPROVEMENT: It will be great to have some way to "flatten" nested functions. That will eliminate the need for complicated scope analyzer.
 
+* Use relative imports.
+
 
 Core
 ----
@@ -56,6 +58,18 @@ Core
   Perhaps comprehensions need the same kind of policies as loop unroller does, to force evaluation in such cases (also in cases of various generator functions that can reference global variables and so on).
 
 * FEATURE (core/expression): support partial evaluation of starred arguments in invocations (see commented part of ``test_function_call``).
+
+* In ``check_peval_expression()``, sometimes we force the expected node (e.g. "-5" is parsed as "UnaryOp(op=USub(), Num(n=5))", not as "Num(n=-5)", but we enforce the latter). Is that really necessary? If Python parses it as the former, shouldn't we generate the same?
+
+* If we're limited to Py>=3.5, ``check_peval_expression_bool()`` is not needed anymore.
+
+* ``EvaluationResult.mutated_bindings`` does not seemd to be filled anywhere. A remainder from Py2 support where list comprehensions leak bindings? Although it may be necessary again for the new walrus operator in Py3.8.
+
+* Compress bindings, eliminating all duplicates that point to the same object.
+
+* There seems to be an inconsistency regarding on whether the argument or mutated context is passed first/returned first in functions.
+
+* If we have an option object, a useful object would be: "assume builtins are not redefined", which will make the resulting code much more readable.
 
 
 Components
