@@ -2,7 +2,8 @@ import inspect
 from functools import lru_cache
 
 from peval.core.function import Function, has_nested_definitions, is_async
-from peval.components import inline_functions, prune_cfg, prune_assignments, fold
+from peval.components import (
+    inline_functions, prune_cfg, prune_assignments, fold, peval_function_header)
 from peval.tools import ast_equal
 
 
@@ -42,12 +43,18 @@ def partial_apply(func, *args, **kwds):
     else:
         bound_function = function
 
-    new_tree, bindings = _run_components(
-        bound_function.tree,
-        bound_function.get_external_variables())
+    ext_vars = bound_function.get_external_variables()
+
+    # We don't need to run signature evaluation several times until convergence,
+    # since there is no inlining/folding going on.
+    new_tree, signature_bindings = peval_function_header(bound_function.tree, ext_vars)
+
+    # The components do have to be run iteratively until convergence for the body of the function.
+    new_tree, body_bindings = _run_components(new_tree, ext_vars)
 
     globals_ = dict(bound_function.globals)
-    globals_.update(bindings)
+    globals_.update(signature_bindings)
+    globals_.update(body_bindings)
 
     new_function = bound_function.replace(tree=new_tree, globals_=globals_)
 
