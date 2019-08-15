@@ -88,7 +88,7 @@ class NewStyleDerivedDummy(NewStyleDummy):
 
 
 def pytest_generate_tests(metafunc):
-    if 'cls' in metafunc.funcargnames:
+    if 'cls' in metafunc.fixturenames:
         clss = [{'base': NewStyleDummy, 'derived': NewStyleDerivedDummy}]
         ids = ['new style']
         metafunc.parametrize('cls', clss, ids=ids)
