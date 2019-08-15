@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 import astunparse
 
-from peval.tools import unindent, replace_fields, immutableadict, ast_inspector
+from peval.tools import unindent, replace_fields, immutableadict, ast_inspector, ast_transformer
 from peval.core.gensym import GenSym
 from peval.core.reify import reify_unwrapped
 from peval.core.scope import analyze_scope
@@ -192,6 +192,15 @@ def filter_function_def(function_def, bound_argnames):
         returns=function_def.returns)
 
 
+@ast_transformer
+def parse_annotations(node, **_):
+    if isinstance(node, ast.arg) and isinstance(node.annotation, ast.Str):
+        annotation = ast.parse(node.annotation.s).body[0].value
+        node = replace_fields(node, annotation=annotation)
+    return node
+
+
+
 class Function(object):
     """
     A wrapper for functions providing transformations to and from AST
@@ -254,6 +263,12 @@ class Function(object):
 
         src = getsource(func)
         tree = ast.parse(src).body[0]
+
+        # Annotations may be strings, and starting from Py3.8 they will always be strings.
+        # We need them as actual AST in order to know what bindings to leave in globals,
+        # and to partially evaluate them later.
+        tree = parse_annotations(tree)
+
         if ignore_decorators:
             tree = replace_fields(tree, decorator_list=[])
 

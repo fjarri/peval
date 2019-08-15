@@ -1,3 +1,5 @@
+import pytest
+
 from peval.tags import pure
 from peval.components import peval_function_header
 
@@ -27,3 +29,24 @@ def test_peval_function_header():
         expected_new_bindings=dict(
             __peval_temp_1=Dummy.tp1,
             __peval_temp_2=get_type()))
+
+
+@pure
+def make_annotation(p):
+    return str(p + 1)
+
+
+@pytest.mark.parametrize('str_annotation', [False, True], ids=["ast_annotation", "str_annotation"])
+def test_peval_annotations(str_annotation):
+    if str_annotation:
+        def dummy_annotations(x: "make_annotation(1)"):
+            pass
+    else:
+        def dummy_annotations(x: make_annotation(1)):
+            pass
+    check_component(
+        peval_function_header, dummy_annotations,
+        expected_source="""
+            def dummy_annotations(x: "2"):
+                pass
+            """)
