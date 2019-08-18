@@ -122,9 +122,6 @@ def forward_transfer(gen_sym, in_env, statement):
 
         new_values = dict(in_env.values)
 
-        for name in result.mutated_bindings:
-            new_values[name] = Value(undefined=True)
-
         if result.fully_evaluated:
             new_value = Value(value=result.value)
         else:
@@ -141,9 +138,6 @@ def forward_transfer(gen_sym, in_env, statement):
 
         new_values = dict(in_env.values)
 
-        for name in result.mutated_bindings:
-            new_values[name] = Value(undefined=True)
-
         new_exprs = [CachedExpression(path=['value'], node=result.node)]
         out_env = Environment(values=new_values)
 
@@ -153,9 +147,6 @@ def forward_transfer(gen_sym, in_env, statement):
         result, gen_sym = peval_expression(statement.test, gen_sym, in_env.known_values())
 
         new_values = dict(in_env.values)
-
-        for name in result.mutated_bindings:
-            new_values[name] = Value(undefined=True)
 
         out_env = Environment(values=new_values)
 

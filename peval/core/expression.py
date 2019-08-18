@@ -754,7 +754,6 @@ class EvaluationResult:
             self.value = value
         self.temp_bindings = temp_bindings
         self.node = node
-        self.mutated_bindings = set()
 
 
 def _peval_expression(state, node, ctx):
