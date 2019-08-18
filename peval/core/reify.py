@@ -27,7 +27,7 @@ def is_known_value(node_or_kvalue):
     return type(node_or_kvalue) == KnownValue
 
 
-def reify(kvalue, gen_sym):
+def reify(kvalue, gen_sym, create_binding=False):
 
     value = kvalue.value
 
@@ -40,7 +40,7 @@ def reify(kvalue, gen_sym):
     elif type(value) in (int, float, complex):
         return ast.Num(n=value), gen_sym, {}
     else:
-        if kvalue.preferred_name is None:
+        if kvalue.preferred_name is None or create_binding:
             name, gen_sym = gen_sym('temp')
         else:
             name = kvalue.preferred_name

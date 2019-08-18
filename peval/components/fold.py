@@ -116,8 +116,13 @@ class CachedExpression:
 
 def forward_transfer(gen_sym, in_env, statement):
 
-    if isinstance(statement, ast.Assign):
-        target = statement.targets[0].id
+    if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+        if isinstance(statement, ast.AnnAssign):
+            target = statement.target.id
+        else:
+            assert len(statement.targets) == 1
+            target = statement.targets[0].id
+
         result, gen_sym = peval_expression(statement.value, gen_sym, in_env.known_values())
 
         new_values = dict(in_env.values)
@@ -160,7 +165,8 @@ def forward_transfer(gen_sym, in_env, statement):
 
 class State:
 
-    def __init__(self, out_env, exprs, temp_bindings):
+    def __init__(self, in_env, out_env, exprs, temp_bindings):
+        self.in_env = in_env
         self.out_env = out_env
         self.exprs = exprs
         self.temp_bindings = temp_bindings
@@ -187,7 +193,7 @@ def get_sorted_nodes(graph, enter):
 def maximal_fixed_point(gen_sym, graph, enter, bindings):
 
     states = dict(
-        (node_id, State(Environment.from_dict(bindings), [], {}))
+        (node_id, State(Environment.from_dict(bindings), Environment.from_dict(bindings), [], {}))
         for node_id in graph.nodes)
     enter_env = Environment.from_dict(bindings)
 
@@ -212,11 +218,13 @@ def maximal_fixed_point(gen_sym, graph, enter, bindings):
         gen_sym, new_out_env, new_exprs, temp_bindings = \
             forward_transfer(gen_sym, new_in_env, graph.nodes[node_id].ast_node)
 
+        # TODO: merge it with the code in the condition above to avoid repetition
+        states[node_id].in_env = new_in_env
         states[node_id].exprs = new_exprs
         states[node_id].temp_bindings = temp_bindings
 
         if new_out_env != states[node_id].out_env:
-            states[node_id] = State(new_out_env, new_exprs, temp_bindings)
+            states[node_id] = State(new_in_env, new_out_env, new_exprs, temp_bindings)
             for dest_id in sorted(graph.children_of(node_id)):
                 if dest_id not in todo_forward_set:
                     todo_forward_set.add(dest_id)
@@ -226,8 +234,22 @@ def maximal_fixed_point(gen_sym, graph, enter, bindings):
     new_exprs = {}
     temp_bindings = {}
     for node_id, state in states.items():
-        new_exprs[node_id] = state.exprs
-        temp_bindings.update(state.temp_bindings)
+
+        node = graph.nodes[node_id].ast_node
+        exprs = list(state.exprs)
+        exprs_temp_bindings = dict(state.temp_bindings)
+
+        # Evaluating annotations only after the MFP has converged,
+        # since they don't introduce new bindings
+        if isinstance(node, ast.AnnAssign):
+            in_env = state.in_env
+            annotation_result, gen_sym = peval_expression(
+                node.annotation, gen_sym, state.in_env.known_values(), create_binding=True)
+            exprs.append(CachedExpression(path=['annotation'], node=annotation_result.node))
+            exprs_temp_bindings.update(annotation_result.temp_bindings)
+
+        new_exprs[node_id] = exprs
+        temp_bindings.update(exprs_temp_bindings)
 
     return new_exprs, temp_bindings
 

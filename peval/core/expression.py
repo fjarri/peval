@@ -57,21 +57,21 @@ COMPARE_OPS = {
     }
 
 
-def _reify_func(acc, value):
+def _reify_func(acc, value, create_binding):
     if is_known_value(value):
         # For ``reify()`` we do not need to pass through
         # the whole state, only ``gen_sym``.
         gen_sym, bindings = acc
-        node, gen_sym, binding = reify(value, gen_sym)
+        node, gen_sym, binding = reify(value, gen_sym, create_binding=create_binding)
         return (gen_sym, bindings.update(binding)), node
     else:
         # Should be an AST node
         return acc, value
 
 
-def map_reify(state, container):
+def map_reify(state, container, create_binding=False):
     acc = (state.gen_sym, immutabledict())
-    acc, new_container = map_accum(_reify_func, acc, container)
+    acc, new_container = map_accum(_reify_func, acc, container, create_binding)
     gen_sym, bindings = acc
 
     new_state = state.update(gen_sym=gen_sym, temp_bindings=state.temp_bindings.update(bindings))
@@ -760,14 +760,14 @@ def _peval_expression(state, node, ctx):
     return _peval_expression_dispatcher(node, state, node, ctx)
 
 
-def peval_expression(node, gen_sym, bindings):
+def peval_expression(node, gen_sym, bindings, create_binding=False):
 
     ctx = immutableadict(bindings=bindings)
     state = immutableadict(gen_sym=gen_sym, temp_bindings=immutableadict())
 
     state, result = _peval_expression(state, node, ctx)
     if is_known_value(result):
-        state, result_node = map_reify(state, result)
+        state, result_node = map_reify(state, result, create_binding)
         eval_result = EvaluationResult(
             fully_evaluated=True,
             value=result.value,

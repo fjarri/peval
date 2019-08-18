@@ -79,3 +79,34 @@ def test_if_visit_only_true_branch():
                     inc()
             """)
     assert global_state['cnt'] == 1
+
+
+@pure
+def int32():
+    return int
+
+
+def func_annotations():
+    x = int
+    a: x
+    x = float
+    b: x
+    c: int32()
+
+
+def test_variable_annotation():
+    print()
+    check_component(
+        fold, func_annotations,
+        expected_source="""
+            def func_annotations():
+                x = int
+                a: __peval_temp_1
+                x = float
+                b: __peval_temp_2
+                c: __peval_temp_3
+            """,
+        expected_new_bindings=dict(
+            __peval_temp_1=int,
+            __peval_temp_2=float,
+            __peval_temp_3=int))
