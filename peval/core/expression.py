@@ -559,6 +559,10 @@ class _peval_expression_dispatcher:
         return state, KnownValue(node.value)
 
     @staticmethod
+    def handle_Constant(state, node, _):
+        return state, KnownValue(node.value)
+
+    @staticmethod
     def handle_BoolOp(state, node, ctx):
         return peval_boolop(state, ctx, node.op, node.values)
 
