@@ -29,6 +29,7 @@ setup(
     author="Bogdan Opanchuk",
     author_email="bogdan@opanchuk.net",
     packages=find_packages(),
+    python_requires='>=3.6.0',
     install_requires=[
         "astunparse>=1.3.0",
         ],
