@@ -1,9 +1,15 @@
 import ast
+import sys
 
 
-NONE_NODE = ast.NameConstant(value=None)
-FALSE_NODE = ast.NameConstant(value=False)
-TRUE_NODE = ast.NameConstant(value=True)
+if sys.version_info[:2] >= (3, 8):
+    NONE_NODE = ast.Constant(value=None, kind=None)
+    FALSE_NODE = ast.Constant(value=False, kind=None)
+    TRUE_NODE = ast.Constant(value=True, kind=None)
+else:
+    NONE_NODE = ast.NameConstant(value=None)
+    FALSE_NODE = ast.NameConstant(value=False)
+    TRUE_NODE = ast.NameConstant(value=True)
 
 
 class KnownValue(object):
@@ -32,13 +38,25 @@ def reify(kvalue, gen_sym, create_binding=False):
     value = kvalue.value
 
     if value is True or value is False or value is None:
-        return ast.NameConstant(value=value), gen_sym, {}
+        if sys.version_info[:2] >= (3, 8):
+            return ast.Constant(value=value, kind=None), gen_sym, {}
+        else:
+            return ast.NameConstant(value=value), gen_sym, {}
     elif type(value) == str:
-        return ast.Str(s=value), gen_sym, {}
+        if sys.version_info[:2] >= (3, 8):
+            return ast.Constant(value=value, kind=None), gen_sym, {}
+        else:
+            return ast.Str(s=value), gen_sym, {}
     elif type(value) == bytes:
-        return ast.Bytes(s=value), gen_sym, {}
+        if sys.version_info[:2] >= (3, 8):
+            return ast.Constant(value=value, kind=None), gen_sym, {}
+        else:
+            return ast.Bytes(s=value), gen_sym, {}
     elif type(value) in (int, float, complex):
-        return ast.Num(n=value), gen_sym, {}
+        if sys.version_info[:2] >= (3, 8):
+            return ast.Constant(value=value, kind=None), gen_sym, {}
+        else:
+            return ast.Num(n=value), gen_sym, {}
     else:
         if kvalue.preferred_name is None or create_binding:
             name, gen_sym = gen_sym('temp')

@@ -30,9 +30,17 @@ def check_node_to_maybe_kvalue(node, bindings, expected_result, expected_preferr
 
 
 def test_simple_reify():
-    check_reify(True, ast.NameConstant(value=True))
-    check_reify(False, ast.NameConstant(value=False))
-    check_reify(None, ast.NameConstant(value=None))
+    unified_constants = sys.version_info[:2] >= (3, 8)
+
+    check_reify(
+        True,
+        ast.Constant(value=True, kind=None) if unified_constants else ast.NameConstant(value=True))
+    check_reify(
+        False,
+        ast.Constant(value=False, kind=None) if unified_constants else ast.NameConstant(value=False))
+    check_reify(
+        None,
+        ast.Constant(value=None, kind=None) if unified_constants else ast.NameConstant(value=None))
 
     class Dummy(): pass
     x = Dummy()
@@ -43,13 +51,13 @@ def test_simple_reify():
         x, ast.Name(id='y', ctx=ast.Load()),
         preferred_name='y', expected_binding=dict(y=x))
 
-    check_reify(1, ast.Num(n=1))
-    check_reify(2.3, ast.Num(n=2.3))
-    check_reify(3+4j, ast.Num(n=3+4j))
-    check_reify('abc', ast.Str(s='abc'))
+    check_reify(1, ast.Constant(value=1, kind=None) if unified_constants else ast.Num(n=1))
+    check_reify(2.3, ast.Constant(value=2.3, kind=None) if unified_constants else ast.Num(n=2.3))
+    check_reify(3+4j, ast.Constant(value=3+4j, kind=None) if unified_constants else ast.Num(n=3+4j))
+    check_reify('abc', ast.Constant(value='abc', kind=None) if unified_constants else ast.Str(s='abc'))
 
     s = bytes('abc', encoding='ascii')
-    check_reify(s, ast.Bytes(s=s))
+    check_reify(s, ast.Constant(value=s, kind=None) if unified_constants else ast.Bytes(s=s))
 
 
 def test_reify_unwrapped():

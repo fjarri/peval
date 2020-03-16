@@ -44,7 +44,7 @@ def eval_function_def(function_def, globals_=None, flags=None):
     assert type(function_def) in (ast.FunctionDef, ast.AsyncFunctionDef)
 
     # Making a copy before mutating
-    module = ast.Module(body=[copy.deepcopy(function_def)])
+    module = ast.Module(body=[copy.deepcopy(function_def)], type_ignores=[])
 
     ast.fix_missing_locations(module)
 
@@ -89,6 +89,7 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
         for name in closure_names]
 
     empty_args = ast.arguments(
+        posonlyargs=[],
         args=[],
         vararg=None,
         kwonlyargs=[],
