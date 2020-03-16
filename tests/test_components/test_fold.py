@@ -5,7 +5,7 @@ import pytest
 from peval.components import fold
 from peval import pure
 
-from tests.utils import check_component
+from tests.utils import check_component, function_from_source
 
 
 def dummy(x):
@@ -86,16 +86,19 @@ def int32():
     return int
 
 
-def func_annotations():
-    x = int
-    a: x
-    x = float
-    b: x
-    c: int32()
-
-
 def test_variable_annotation():
-    print()
+    if sys.version_info < (3, 6):
+        pytest.skip()
+
+    func_annotations = function_from_source("""
+        def func_annotations():
+            x = int
+            a: x
+            x = float
+            b: x
+            c: int32()
+        """, globals_=dict(int32=int32)).eval()
+
     check_component(
         fold, func_annotations,
         expected_source="""
