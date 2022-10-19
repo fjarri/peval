@@ -15,8 +15,7 @@ matrix:
   allow_failures:
     - python: nightly
 install:
-  - pip install coveralls
-  - pip install pytest-cov
+  - pip install --upgrade pip setuptools setuptools-scm build wheel coveralls pytest-cov
   - pip install .
 # command to run tests
 script:
