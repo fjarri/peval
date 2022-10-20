@@ -240,6 +240,9 @@ class _Walker:
             new_fields = {}
 
         new_state = state
+        if node is None:
+            return new_state, node
+
         for field, value in ast.iter_fields(node):
 
             block_context = field in _BLOCK_FIELDS and type(value) == list
