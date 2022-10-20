@@ -1,8 +1,10 @@
 import ast
+import typing
 
 from peval.core.gensym import GenSym
 from peval.tools import replace_fields, ast_walker, immutabledict
 from peval.core.expression import peval_expression
+from peval.typing import ConstsDictT, PassOutputT
 
 from astunparse import dump
 
@@ -39,7 +41,7 @@ class _peval_function_header:
         return state, node
 
 
-def peval_function_header(tree, constants):
+def peval_function_header(tree: ast.FunctionDef, constants: ConstsDictT) -> PassOutputT:
     """
     Partially evaluate argument annotations and return annotation of a function.
     """

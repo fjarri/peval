@@ -1,8 +1,9 @@
 import ast
 import re
+import typing
 
 
-def unindent(source):
+def unindent(source: str) -> str:
     """
     Shift source to the left so that it starts with zero indentation.
     """
@@ -21,7 +22,7 @@ def unindent(source):
     return "\n".join(shifted_lines)
 
 
-def replace_fields(node, **kwds):
+def replace_fields(node: ast.AST, **kwds) -> ast.AST:
     """
     Return a node with several of its fields replaced by the given values.
     """
@@ -35,7 +36,7 @@ def replace_fields(node, **kwds):
     return type(node)(**new_kwds)
 
 
-def ast_equal(node1, node2):
+def ast_equal(node1: ast.AST, node2: ast.AST) -> bool:
     """
     Test two AST nodes or two lists of AST nodes for equality.
     """
@@ -63,7 +64,7 @@ def ast_equal(node1, node2):
     return True
 
 
-def map_accum(func, acc, container, *args):
+def map_accum(func: typing.Callable, acc: typing.Any, container: typing.Iterable, *args) -> typing.Tuple[typing.Any, typing.Iterable]:
     if container is None:
         return acc, None
     elif type(container) in (list, tuple, zip):
@@ -83,7 +84,7 @@ def map_accum(func, acc, container, *args):
         return func(acc, container, *args)
 
 
-def fold_and(func, container):
+def fold_and(func: typing.Callable, container) -> bool:
     if type(container) in (list, tuple, zip):
         return all(fold_and(func, elem) for elem in container)
     elif type(container) == dict:

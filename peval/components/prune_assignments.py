@@ -1,10 +1,12 @@
 import ast
+import typing
 
 from peval.tools import ast_transformer, replace_fields
 from peval.core.scope import analyze_scope
+from peval.typing import ConstsDictT, PassOutputT
 
 
-def prune_assignments(node, constants):
+def prune_assignments(node: ast.AST, constants: ConstsDictT) -> PassOutputT:
     scope = analyze_scope(node.body)
     node = remove_unused_assignments(node, ctx=dict(locals_used=scope.locals_used))
     node = remove_simple_assignments(node)
@@ -25,7 +27,7 @@ class remove_unused_assignments:
             return node
 
 
-def remove_simple_assignments(node):
+def remove_simple_assignments(node: typing.Union[ast.FunctionDef, ast.Module]) -> typing.Union[ast.FunctionDef, ast.Module]:
     """
     Remove one assigment of the form `<variable> = <variable>` at a time,
     touching only the top level statements of the block.
@@ -52,7 +54,7 @@ def remove_simple_assignments(node):
     return replace_fields(node, body=new_nodes)
 
 
-def _can_remove_assignment(assign_node, node_list):
+def _can_remove_assignment(assign_node: ast.Assign, node_list: typing.List[ast.AST]) -> typing.Union[typing.Tuple[bool, str, str], typing.Tuple[bool, None, None]]:
     """
     Can remove it if:
     * it is "simple"

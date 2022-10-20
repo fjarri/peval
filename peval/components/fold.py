@@ -1,15 +1,18 @@
 import ast
 from functools import reduce
+import typing
 
 from peval.tools import replace_fields, ast_transformer
 from peval.core.gensym import GenSym
-from peval.core.cfg import build_cfg
+from peval.core.cfg import Graph, build_cfg
 from peval.core.expression import peval_expression
+from peval.tools.immutable import immutableadict
+from peval.typing import ConstsDictT, PassOutputT
 
 
 class Value:
 
-    def __init__(self, value=None, undefined=False):
+    def __init__(self, value: typing.Optional[typing.Any]=None, undefined: bool=False) -> None:
         if undefined:
             self.defined = False
             self.value = None
@@ -23,7 +26,7 @@ class Value:
         else:
             return "<" + str(self.value) + ">"
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Value") -> bool:
         return self.defined == other.defined and self.value == other.value
 
     def __ne__(self, other):
@@ -36,7 +39,7 @@ class Value:
             return "Value(value={value})".format(value=repr(self.value))
 
 
-def meet_values(val1, val2):
+def meet_values(val1: Value, val2: Value) -> Value:
     if not val1.defined or not val2.defined:
         return Value(undefined=True)
 
@@ -60,27 +63,27 @@ def meet_values(val1, val2):
 
 class Environment:
 
-    def __init__(self, values=None):
+    def __init__(self, values: typing.Dict[str, Value]) -> None:
         self.values = values if values is not None else {}
 
     @classmethod
-    def from_dict(cls, values):
+    def from_dict(cls, values: ConstsDictT) -> "Environment":
         return cls(values=dict((name, Value(value=value)) for name, value in values.items()))
 
-    def known_values(self):
+    def known_values(self) -> ConstsDictT:
         return dict((name, value.value) for name, value in self.values.items() if value.defined)
 
     def __eq__(self, other):
         return self.values == other.values
 
-    def __ne__(self, other):
+    def __ne__(self, other: "Environment") -> bool:
         return self.values != other.values
 
     def __repr__(self):
         return "Environment(values={values})".format(values=self.values)
 
 
-def meet_envs(env1, env2):
+def meet_envs(env1: Environment, env2: Environment) -> Environment:
 
     lhs = env1.values
     rhs = env2.values
@@ -100,7 +103,7 @@ def meet_envs(env1, env2):
     return Environment(values=result)
 
 
-def my_reduce(func, seq):
+def my_reduce(func: typing.Callable, seq: typing.Iterable[Environment]) -> Environment:
     if len(seq) == 1:
         return seq[0]
     else:
@@ -109,12 +112,14 @@ def my_reduce(func, seq):
 
 class CachedExpression:
 
-    def __init__(self, path, node):
+    def __init__(self, path: typing.List[str], node: ast.expr) -> None:
         self.node = node
         self.path = path
 
 
-def forward_transfer(gen_sym, in_env, statement):
+TempBindingsT = typing.Mapping[str, typing.Any]
+
+def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) -> typing.Tuple[GenSym, Environment, typing.List[CachedExpression], TempBindingsT]:
 
     if isinstance(statement, (ast.Assign, ast.AnnAssign)):
         if isinstance(statement, ast.AnnAssign):
@@ -165,14 +170,14 @@ def forward_transfer(gen_sym, in_env, statement):
 
 class State:
 
-    def __init__(self, in_env, out_env, exprs, temp_bindings):
+    def __init__(self, in_env: Environment, out_env: Environment, exprs:  typing.List[CachedExpression], temp_bindings: immutableadict) -> None:
         self.in_env = in_env
         self.out_env = out_env
         self.exprs = exprs
         self.temp_bindings = temp_bindings
 
 
-def get_sorted_nodes(graph, enter):
+def get_sorted_nodes(graph: Graph, enter: int) -> typing.List[int]:
     sorted_nodes = []
     todo_list = [enter]
     visited = set()
@@ -190,7 +195,7 @@ def get_sorted_nodes(graph, enter):
     return sorted_nodes
 
 
-def maximal_fixed_point(gen_sym, graph, enter, bindings):
+def maximal_fixed_point(gen_sym: GenSym, graph: Graph, enter: int, bindings: ConstsDictT) -> typing.Tuple[typing.List[CachedExpression], TempBindingsT]:
 
     states = dict(
         (node_id, State(Environment.from_dict(bindings), Environment.from_dict(bindings), [], {}))
@@ -254,11 +259,13 @@ def maximal_fixed_point(gen_sym, graph, enter, bindings):
     return new_exprs, temp_bindings
 
 
-def replace_exprs(tree, new_exprs):
+def replace_exprs(tree: ast.FunctionDef, new_exprs: typing.Dict[int, typing.List[CachedExpression]]) -> typing.Union[ast.FunctionDef, ast.Module]:
     return _replace_exprs(tree, ctx=dict(new_exprs=new_exprs))
 
 
-def replace_by_path(obj, path, new_value):
+ReplaceByPathNodeT = typing.Union[ast.If, ast.Assign, ast.Expr, ast.Return]
+
+def replace_by_path(obj: ReplaceByPathNodeT, path: typing.Iterable[str], new_value: ast.expr) -> ReplaceByPathNodeT:
 
     ptr = path[0]
 
@@ -292,7 +299,7 @@ def _replace_exprs(node, ctx, walk_field, **_):
         return node
 
 
-def fold(tree, constants):
+def fold(tree: ast.AST, constants: ConstsDictT) -> PassOutputT:
     statements = tree.body
     cfg = build_cfg(statements)
     gen_sym = GenSym.for_tree(tree)

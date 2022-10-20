@@ -1,5 +1,9 @@
 import ast
 import sys
+import typing
+
+from peval.core.gensym import GenSym
+from peval.typing import ConstantOrNameNodeT, ConsantOrASTNodeT
 
 
 if sys.version_info[:2] >= (3, 8):
@@ -14,7 +18,7 @@ else:
 
 class KnownValue(object):
 
-    def __init__(self, value, preferred_name=None):
+    def __init__(self, value: typing.Any, preferred_name: typing.Optional[str]=None) -> None:
         self.value = value
         self.preferred_name = preferred_name
 
@@ -29,11 +33,13 @@ class KnownValue(object):
             value=repr(self.value), name=repr(self.preferred_name))
 
 
-def is_known_value(node_or_kvalue):
+def is_known_value(node_or_kvalue: typing.Any) -> bool:
     return type(node_or_kvalue) == KnownValue
 
 
-def reify(kvalue, gen_sym, create_binding=False):
+ReifyResT = typing.Tuple[ConstantOrNameNodeT, GenSym, typing.Dict[str, ConsantOrASTNodeT]]
+
+def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool=False) -> ReifyResT:
 
     value = kvalue.value
 
@@ -65,5 +71,5 @@ def reify(kvalue, gen_sym, create_binding=False):
         return ast.Name(id=name, ctx=ast.Load()), gen_sym, {name: value}
 
 
-def reify_unwrapped(value, gen_sym):
+def reify_unwrapped(value: ConstantOrNameNodeT, gen_sym: GenSym) -> ReifyResT:
     return reify(KnownValue(value), gen_sym)
