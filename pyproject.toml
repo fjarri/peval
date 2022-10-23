@@ -16,13 +16,17 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Code Generators",
 ]
 urls = {Homepage = "https://github.com/fjarri/peval"}
-requires-python = ">=3.6.0"
-dependencies = ["astunparse>=1.3.0"]
+requires-python = ">=3.8.0"
+dependencies = [
+    "astunparse>=1.3.0",
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
