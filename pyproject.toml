@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=61.2", "setuptools_scm[toml]>=3.4.3"]
+requires = [
+    "setuptools>=61.2",
+    "setuptools_scm[toml]>=3.4.3",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,12 +28,23 @@ classifiers = [
 urls = {Homepage = "https://github.com/fjarri/peval"}
 requires-python = ">=3.8.0"
 dependencies = [
-    "astunparse>=1.3.0",
+    "astunparse>=1.3",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-testing = ["pytest"]
+tests = [
+    "pytest>=7",
+    "pytest-cov",
+]
+docs = [
+    "sphinx>=4",
+    "furo",
+]
+lint = [
+    "mypy>=0.941",
+    "black",
+]
 
 [tool.setuptools]
 platforms = ["any"]
