@@ -1,3 +1,22 @@
+First issues:
+
+- Figure out the bug on 3.8 nightly (https://travis-ci.org/fjarri/peval/jobs/573315684). The current pyenv version does not have it, must be something new they introduced. Check in some time.
+
+- Convert TODO and License to Markdown, remove TODO from github?
+
+- in `test_callable` remove things related to inheritance from `(object)`
+
+- why does `forward_transfer()` returns lists of one element?
+
+- why are we calling `map_reify()` on something that is always a single element and not a container in `peval_expression()`?
+
+- `map_accum()` should also take `**kwds` to pass to the predicate.
+
+- Need to mark types and add comments for internal functions. Not to mention just go through the library and deconvolute it a little.
+
+- update `function.py::FUTURE_NAMES` for Py3.7/3.8
+
+
 General
 -------
 
@@ -62,8 +81,6 @@ Core
 * In ``check_peval_expression()``, sometimes we force the expected node (e.g. "-5" is parsed as "UnaryOp(op=USub(), Num(n=5))", not as "Num(n=-5)", but we enforce the latter). Is that really necessary? If Python parses it as the former, shouldn't we generate the same?
 
 * If we're limited to Py>=3.5, ``check_peval_expression_bool()`` is not needed anymore.
-
-* ``EvaluationResult.mutated_bindings`` does not seemd to be filled anywhere. A remainder from Py2 support where list comprehensions leak bindings? Although it may be necessary again for the new walrus operator in Py3.8.
 
 * Compress bindings, eliminating all duplicates that point to the same object.
 
