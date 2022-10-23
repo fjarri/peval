@@ -11,11 +11,11 @@ Scope = namedtuple('Scope', 'locals locals_used globals')
 class _analyze_scope:
 
     @staticmethod
-    def handle_arg(state, node, **_):
+    def handle_arg(state, node: ast.AST, **_):
         return state.update(locals=state.locals.add(node.arg))
 
     @staticmethod
-    def handle_Name(state, node, **_):
+    def handle_Name(state, node: ast.AST, **_):
         name = node.id
         if type(node.ctx) == ast.Store:
             state = state.update(locals=state.locals.add(name))
@@ -30,14 +30,14 @@ class _analyze_scope:
         return state
 
     @staticmethod
-    def handle_alias(state, node, **_):
+    def handle_alias(state, node: ast.AST, **_):
         name = node.asname if node.asname else node.name
         if '.' in name:
             name = name.split('.', 1)[0]
         return state.update(locals=state.locals.add(name))
 
 
-def analyze_scope(node):
+def analyze_scope(node: ast.AST) -> Scope:
     state = _analyze_scope(
         dict(locals=immutableset(), locals_used=immutableset(), globals=immutableset()),
         node)

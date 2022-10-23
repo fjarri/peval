@@ -5,6 +5,7 @@ The classes in this module have the prefix 'immutable' to avoid confusion
 with the built-in ``frozenset``, which does not have any modification methods,
 even pure ones.
 """
+import typing
 
 
 class immutabledict(dict):
@@ -48,7 +49,7 @@ class immutabledict(dict):
     def __delitem__(self, key):
         raise AttributeError("Item deletion syntax is not available for an immutable dict")
 
-    def del_(self, key):
+    def del_(self, key: str) -> "immutableadict":
         if key in self:
             new_dict = self.__class__(self)
             dict.__delitem__(new_dict, key)
@@ -59,7 +60,7 @@ class immutabledict(dict):
     def __setitem__(self, key, item):
         raise AttributeError("Item assignment syntax is not available for an immutable dict")
 
-    def set(self, key, value):
+    def set(self, key: str, value: typing.Any) -> "immutabledict":
         if key in self and self[key] is value:
             return self
         else:
@@ -67,7 +68,7 @@ class immutabledict(dict):
             dict.__setitem__(new_dict, key, value)
             return new_dict
 
-    def update(self, *args, **kwds):
+    def update(self, *args, **kwds) -> "immutabledict":
 
         if len(kwds) == 0 and len(args) == 0:
             return self
@@ -102,7 +103,7 @@ class immutableadict(immutabledict):
     (e.g. ``d['a']`` is equivalent to ``d.a``).
     """
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> typing.Any:
         return self[attr]
 
     def __setattr__(self, attr, value):
@@ -123,7 +124,7 @@ class immutableset(set):
     the source set itself is returned as the new set.
     """
 
-    def add(self, elem):
+    def add(self, elem: str) -> "immutableset":
         if elem in self:
             return self
         else:
@@ -150,7 +151,7 @@ class immutableset(set):
         elem = set.pop(new_set)
         return elem, new_set
 
-    def remove(self, elem):
+    def remove(self, elem: str) -> "immutableset":
         new_set = self.__class__(self)
         set.remove(new_set, elem)
         return new_set
@@ -173,14 +174,14 @@ class immutableset(set):
         raise AttributeError("`-=` is not available for an immutable set")
 
 
-    def union(self, *args):
+    def union(self, *args) -> "immutableset":
         res = self.__class__(set.union(self, *args))
         if res == self:
             return self
         else:
             return res
 
-    def __or__(self, other):
+    def __or__(self, other: "immutableset") -> "immutableset":
         return self.union(other)
 
     def update(self, *args):

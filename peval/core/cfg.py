@@ -1,8 +1,9 @@
 import ast
+import typing
 
 
 class Node:
-    def __init__(self, ast_node):
+    def __init__(self, ast_node: ast.AST) -> None:
         self.ast_node = ast_node
         self.parents = set()
         self.children = set()
@@ -10,15 +11,15 @@ class Node:
 
 class Graph:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes = {}
 
-    def add_node(self, ast_node):
+    def add_node(self, ast_node: ast.AST) -> int:
         node_id = id(ast_node)
         self.nodes[node_id] = Node(ast_node)
         return node_id
 
-    def add_edge(self, src, dest):
+    def add_edge(self, src: int, dest: int) -> None:
 
         assert src in self.nodes
         assert dest in self.nodes
@@ -29,18 +30,18 @@ class Graph:
         self.nodes[src].children.add(dest)
         self.nodes[dest].parents.add(src)
 
-    def children_of(self, node):
+    def children_of(self, node: int) -> typing.Set[int]:
         return self.nodes[node].children
 
-    def parents_of(self, node):
+    def parents_of(self, node: int) -> typing.Set[int]:
         return self.nodes[node].parents
 
-    def update(self, other):
+    def update(self, other: "Graph") -> None:
         for node in other.nodes:
             assert node not in self.nodes
         self.nodes.update(other.nodes)
 
-    def get_nontrivial_nodes(self):
+    def get_nontrivial_nodes(self) -> typing.List[int]:
         # returns ids of nodes that can possibly raise an exception
         nodes = []
         for node_id, node_obj in self.nodes.items():
@@ -52,13 +53,13 @@ class Graph:
 
 class Jumps:
 
-    def __init__(self, returns=None, breaks=None, continues=None, raises=None):
+    def __init__(self, returns: typing.Optional[typing.List[int]]=None, breaks: typing.Optional[typing.List[int]]=None, continues=None, raises=None) -> None:
         self.returns = [] if returns is None else returns
         self.breaks = [] if breaks is None else breaks
         self.continues = [] if continues is None else continues
         self.raises = [] if raises is None else raises
 
-    def join(self, other):
+    def join(self, other: "Jumps") -> "Jumps":
         return Jumps(
             returns=self.returns + other.returns,
             breaks=self.breaks + other.breaks,
@@ -67,7 +68,7 @@ class Jumps:
 
 
 class ControlFlowSubgraph:
-    def __init__(self, graph, enter, exits=None, jumps=None):
+    def __init__(self, graph: Graph, enter: int, exits: typing.Optional[typing.List[int]]=None, jumps: typing.Optional[Jumps]=None) -> None:
         self.graph = graph
         self.enter = enter
         self.exits = [] if exits is None else exits
@@ -75,14 +76,14 @@ class ControlFlowSubgraph:
 
 
 class ControlFlowGraph:
-    def __init__(self, graph, enter, exits=None, raises=None):
+    def __init__(self, graph: Graph, enter: int, exits: typing.Optional[typing.List[int]]=None, raises=None) -> None:
         self.graph = graph
         self.enter = enter
         self.exits = [] if exits is None else exits
         self.raises = [] if raises is None else raises
 
 
-def _build_if_cfg(node):
+def _build_if_cfg(node: ast.If) -> ControlFlowSubgraph:
 
     cfg_true = _build_cfg(node.body)
     exits = cfg_true.exits
@@ -105,7 +106,7 @@ def _build_if_cfg(node):
     return ControlFlowSubgraph(graph, node_id, exits=exits, jumps=jumps)
 
 
-def _build_loop_cfg(node):
+def _build_loop_cfg(node: typing.Union[ast.For, ast.While]) -> ControlFlowSubgraph:
 
     cfg = _build_cfg(node.body)
     graph = cfg.graph
@@ -136,7 +137,7 @@ def _build_loop_cfg(node):
     return ControlFlowSubgraph(graph, node_id, exits=exits, jumps=jumps)
 
 
-def _build_with_cfg(node):
+def _build_with_cfg(node: ast.With) -> ControlFlowSubgraph:
     cfg = _build_cfg(node.body)
     graph = cfg.graph
 
@@ -146,7 +147,7 @@ def _build_with_cfg(node):
     return ControlFlowSubgraph(graph, node_id, exits=cfg.exits, jumps=cfg.jumps)
 
 
-def _build_break_cfg(node):
+def _build_break_cfg(node: ast.Break) -> ControlFlowSubgraph:
     graph = Graph()
     node_id = graph.add_node(node)
     return ControlFlowSubgraph(graph, node_id, jumps=Jumps(breaks=[node_id]))
@@ -158,19 +159,19 @@ def _build_continue_cfg(node):
     return ControlFlowSubgraph(graph, node_id, jumps=Jumps(continues=[node_id]))
 
 
-def _build_return_cfg(node):
+def _build_return_cfg(node: ast.Return) -> ControlFlowSubgraph:
     graph = Graph()
     node_id = graph.add_node(node)
     return ControlFlowSubgraph(graph, node_id, jumps=Jumps(returns=[node_id]))
 
 
-def _build_statement_cfg(node):
+def _build_statement_cfg(node: ast.stmt) -> ControlFlowSubgraph:
     graph = Graph()
     node_id = graph.add_node(node)
     return ControlFlowSubgraph(graph, node_id, exits=[node_id])
 
 
-def _build_excepthandler_cfg(node):
+def _build_excepthandler_cfg(node: ast.ExceptHandler) -> ControlFlowSubgraph:
     graph = Graph()
     enter = graph.add_node(node)
 
@@ -181,7 +182,7 @@ def _build_excepthandler_cfg(node):
     return ControlFlowSubgraph(graph, enter, exits=cfg.exits, jumps=cfg.jumps)
 
 
-def _build_try_block_cfg(try_node, body, handlers, orelse):
+def _build_try_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], handlers: typing.List[ast.ExceptHandler], orelse: typing.List[ast.AST]) -> ControlFlowSubgraph:
 
     graph = Graph()
     enter = graph.add_node(try_node)
@@ -229,7 +230,7 @@ def _build_try_block_cfg(try_node, body, handlers, orelse):
     return ControlFlowSubgraph(graph, enter, exits=exits, jumps=jumps)
 
 
-def _build_try_finally_block_cfg(try_node, body, handlers, orelse, finalbody):
+def _build_try_finally_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], handlers: typing.List[ast.ExceptHandler], orelse: typing.List[ast.AST], finalbody: typing.List[ast.AST]) -> ControlFlowSubgraph:
 
     try_cfg = _build_try_block_cfg(try_node, body, handlers, orelse)
 
@@ -268,11 +269,11 @@ def _build_try_finally_cfg(node):
     return _build_try_finally_block_cfg(node, node.body, [], [], node.finalbody)
 
 
-def _build_try_cfg(node):
+def _build_try_cfg(node: ast.Try) -> ControlFlowSubgraph:
     return _build_try_finally_block_cfg(node, node.body, node.handlers, node.orelse, node.finalbody)
 
 
-def _build_node_cfg(node):
+def _build_node_cfg(node) -> ControlFlowSubgraph:
     handlers = {
         ast.If: _build_if_cfg,
         ast.For: _build_loop_cfg,
@@ -292,7 +293,7 @@ def _build_node_cfg(node):
     return handler(node)
 
 
-def _build_cfg(statements):
+def _build_cfg(statements) -> ControlFlowSubgraph:
 
     enter = id(statements[0])
 
@@ -321,7 +322,7 @@ def _build_cfg(statements):
     return ControlFlowSubgraph(graph, enter, exits=exits, jumps=jumps)
 
 
-def build_cfg(statements):
+def build_cfg(statements) -> ControlFlowGraph:
     cfg = _build_cfg(statements)
     assert len(cfg.jumps.breaks) == 0
     assert len(cfg.jumps.continues) == 0

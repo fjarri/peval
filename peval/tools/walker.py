@@ -6,6 +6,7 @@ Inspired by the ``Walker`` class from ``macropy``.
 """
 
 import ast
+import typing
 
 from peval.tools.dispatcher import Dispatcher
 from peval.tools.immutable import immutableadict
@@ -126,7 +127,7 @@ _BLOCK_FIELDS = ('body', 'orelse')
 
 class _Walker:
 
-    def __init__(self, handler, inspect=False, transform=False):
+    def __init__(self, handler: typing.Callable, inspect: bool=False, transform: bool=False) -> None:
 
         self._transform = transform
         self._inspect = inspect
@@ -153,7 +154,7 @@ class _Walker:
 
         self._handler = Dispatcher(handler, default_handler=default_handler)
 
-    def _walk_list(self, state, lst, ctx, block_context=False):
+    def _walk_list(self, state: typing.Optional[immutableadict], lst: typing.List[typing.Any], ctx: typing.Optional[immutableadict], block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.List[typing.Any]]:
         """
         Traverses a list of AST nodes.
         If ``block_context`` is ``True``, the list contains statements
@@ -203,7 +204,7 @@ class _Walker:
 
         return new_state, new_lst
 
-    def _walk_field(self, state, value, ctx, block_context=False):
+    def _walk_field(self, state: typing.Optional[immutableadict], value:  typing.Any, ctx: typing.Optional[immutableadict], block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
         """
         Traverses a single AST node field.
         """
@@ -222,7 +223,7 @@ class _Walker:
     # In these three functions `ctx` goes first because it makes it easier
     # to add it to the list of arguments later when `self._walk_field_user()` is called
 
-    def _transform_field(self, ctx, value, block_context=False):
+    def _transform_field(self, ctx: immutableadict, value: typing.Any, block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
         return self._walk_field(None, value, ctx, block_context=block_context)[1]
 
     def _inspect_field(self, ctx, state, value, block_context=False):
@@ -231,7 +232,7 @@ class _Walker:
     def _transform_inspect_field(self, ctx, state, value, block_context=False):
         return self._walk_field(state, value, ctx, block_context=block_context)
 
-    def _walk_fields(self, state, node, ctx):
+    def _walk_fields(self, state: typing.Optional[immutableadict], node: typing.Optional[ast.AST], ctx: typing.Optional[immutableadict]) -> ast.AST:
         """
         Traverses all fields of an AST node.
         """
@@ -256,7 +257,7 @@ class _Walker:
         else:
             return new_state, node
 
-    def _handle_node(self, state, node, ctx, list_context=False, visiting_after=False):
+    def _handle_node(self, state: typing.Optional[immutableadict], node: ast.AST, ctx: typing.Optional[immutableadict], list_context: bool=False, visiting_after: bool=False) -> typing.Any:
 
         def prepend(nodes):
             self._current_block_stack[-1].extend(nodes)
@@ -308,7 +309,7 @@ class _Walker:
 
         return new_state, new_node, to_visit_after[0], to_skip_fields[0]
 
-    def _walk_node(self, state, node, ctx, list_context=False):
+    def _walk_node(self, state: typing.Optional[immutableadict], node:  ast.AST, ctx: typing.Optional[immutableadict], list_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], ast.AST]:
         """
         Traverses an AST node and its fields.
         """
@@ -325,7 +326,7 @@ class _Walker:
 
         return new_state, new_node
 
-    def __call__(self, *args, ctx=None):
+    def __call__(self, *args, ctx=None) -> typing.Union[typing.Optional[immutableadict], ast.AST, typing.Tuple[typing.Optional[immutableadict], ast.AST]]:
 
         if self._transform and self._inspect:
             if len(args) != 2:
