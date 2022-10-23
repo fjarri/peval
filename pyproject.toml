@@ -10,7 +10,7 @@ name = "peval"
 authors = [{name = "Bogdan Opanchuk", email = "bogdan@opanchuk.net"}]
 description = "Partial evaluation on AST level"
 keywords = ["AST", "partial", "optimization"]
-readme = "README.rst"
+readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Operating System :: OS Independent",
