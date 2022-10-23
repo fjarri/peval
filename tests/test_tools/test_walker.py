@@ -296,6 +296,11 @@ def test_dispatched_walker():
         def handle_Num(state, node, **kwds):
             return state.update(numbers=state.numbers.add(node.n))
 
+        # For Py3.8+
+        @staticmethod
+        def handle_Constant(state, node, **kwds):
+            return state.update(numbers=state.numbers.add(node.n))
+
         @staticmethod
         def handle(state, node, **kwds):
             return state
@@ -305,6 +310,12 @@ def test_dispatched_walker():
         @staticmethod
         def handle_Num(state, node, **kwds):
             return state.update(numbers=state.numbers.add(node.n))
+
+        # For Py3.8+
+        @staticmethod
+        def handle_Constant(state, node, **kwds):
+            return state.update(numbers=state.numbers.add(node.n))
+
 
     node = get_ast(dummy)
 

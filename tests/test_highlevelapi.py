@@ -10,7 +10,7 @@ from peval.core.function import Function
 from peval import partial_eval, partial_apply, specialize_on, getsource, inline
 from peval.tools import unindent
 
-from tests.utils import assert_ast_equal
+from tests.utils import assert_ast_equal, function_from_source
 
 
 def assert_func_equal_on(fn1, fn2, *args, **kwargs):
@@ -186,8 +186,10 @@ def test_peval_prohibit_nested_definitions():
 
 def test_peval_prohibit_async():
 
-    async def f(x):
-        return x
+    f = function_from_source("""
+        async def f(x):
+            return x
+        """).eval()
 
     with pytest.raises(ValueError):
         ff = partial_eval(f)

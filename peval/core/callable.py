@@ -1,5 +1,5 @@
 import types
-
+import typing
 
 WrapperDescriptorType = type(str.__getitem__)
 MethodWrapperType = type("a".__getitem__)
@@ -15,7 +15,7 @@ class Callable:
     # - type + class method
     # - object + method
 
-    def __init__(self, func_obj, self_obj=None, init=False):
+    def __init__(self, func_obj: typing.Callable, self_obj=None, init=False):
         self.func_obj = func_obj
         self.self_obj = self_obj
         self.init = init
@@ -27,7 +27,7 @@ class Callable:
             and self.init == other.init)
 
 
-def inspect_callable(obj):
+def inspect_callable(obj: typing.Callable) -> Callable:
 
     if type(obj) in (types.FunctionType, types.BuiltinFunctionType):
         return Callable(obj)

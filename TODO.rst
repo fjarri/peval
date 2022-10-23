@@ -1,3 +1,22 @@
+First issues:
+
+- Figure out the bug on 3.8 nightly (https://travis-ci.org/fjarri/peval/jobs/573315684). The current pyenv version does not have it, must be something new they introduced. Check in some time.
+
+- Convert TODO and License to Markdown, remove TODO from github?
+
+- in `test_callable` remove things related to inheritance from `(object)`
+
+- why does `forward_transfer()` returns lists of one element?
+
+- why are we calling `map_reify()` on something that is always a single element and not a container in `peval_expression()`?
+
+- `map_accum()` should also take `**kwds` to pass to the predicate.
+
+- Need to mark types and add comments for internal functions. Not to mention just go through the library and deconvolute it a little.
+
+- update `function.py::FUTURE_NAMES` for Py3.7/3.8
+
+
 General
 -------
 
@@ -6,6 +25,8 @@ General
 * IMPROVEMENT: It seems to be common to compare two ASTs before and after some function to check if there were any changes. If it takes much time, we can make walkers set some flag if they made a change in the AST and then just propagate it. Drawbacks: propagating an additional value; changes can take place outside of walkers.
 
 * IMPROVEMENT: It will be great to have some way to "flatten" nested functions. That will eliminate the need for complicated scope analyzer.
+
+* Use relative imports.
 
 
 Core
@@ -56,6 +77,16 @@ Core
   Perhaps comprehensions need the same kind of policies as loop unroller does, to force evaluation in such cases (also in cases of various generator functions that can reference global variables and so on).
 
 * FEATURE (core/expression): support partial evaluation of starred arguments in invocations (see commented part of ``test_function_call``).
+
+* In ``check_peval_expression()``, sometimes we force the expected node (e.g. "-5" is parsed as "UnaryOp(op=USub(), Num(n=5))", not as "Num(n=-5)", but we enforce the latter). Is that really necessary? If Python parses it as the former, shouldn't we generate the same?
+
+* If we're limited to Py>=3.5, ``check_peval_expression_bool()`` is not needed anymore.
+
+* Compress bindings, eliminating all duplicates that point to the same object.
+
+* There seems to be an inconsistency regarding on whether the argument or mutated context is passed first/returned first in functions.
+
+* If we have an option object, a useful object would be: "assume builtins are not redefined", which will make the resulting code much more readable.
 
 
 Components
@@ -134,6 +165,7 @@ There are immutable data structure libraries that may be faster, e.g.:
 
 * https://github.com/zhemao/funktown
 * https://pythonhosted.org/pysistence/
+* https://github.com/tobgu/pyrsistent (currently active)
 
 Alternatively, the embedded implementation can be optimized to reuse data instead of just making copies every time.
 

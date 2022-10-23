@@ -1,6 +1,7 @@
 import operator
 import inspect
 import builtins
+import typing
 
 from peval.tags import get_pure_tag
 
@@ -51,7 +52,7 @@ _BUILTIN_PURE_CALLABLES = _BUILTIN_CALLABLES.difference([
     delattr, setattr, eval, exec, input, print, next, open])
 
 
-def get_signature(func):
+def get_signature(func: typing.Callable) -> inspect.Signature:
     # built-in functions and operators in CPython cannot be inspected,
     # so we use a predefined signature
     if func in _KNOWN_SIGNATURES:
@@ -60,7 +61,7 @@ def get_signature(func):
     return inspect.signature(func)
 
 
-def is_pure(func):
+def is_pure(func: typing.Callable) -> bool:
     pure_tag = get_pure_tag(func)
     if pure_tag is not None:
         return pure_tag

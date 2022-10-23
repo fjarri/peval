@@ -5,7 +5,7 @@ import pytest
 from peval.components import fold
 from peval import pure
 
-from tests.utils import check_component
+from tests.utils import check_component, function_from_source
 
 
 def dummy(x):
@@ -79,3 +79,37 @@ def test_if_visit_only_true_branch():
                     inc()
             """)
     assert global_state['cnt'] == 1
+
+
+@pure
+def int32():
+    return int
+
+
+def test_variable_annotation():
+    if sys.version_info < (3, 6):
+        pytest.skip()
+
+    func_annotations = function_from_source("""
+        def func_annotations():
+            x = int
+            a: x
+            x = float
+            b: x
+            c: int32()
+        """, globals_=dict(int32=int32)).eval()
+
+    check_component(
+        fold, func_annotations,
+        expected_source="""
+            def func_annotations():
+                x = int
+                a: __peval_temp_1
+                x = float
+                b: __peval_temp_2
+                c: __peval_temp_3
+            """,
+        expected_new_bindings=dict(
+            __peval_temp_1=int,
+            __peval_temp_2=float,
+            __peval_temp_3=int))

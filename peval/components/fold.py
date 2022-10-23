@@ -1,15 +1,18 @@
 import ast
 from functools import reduce
+import typing
 
 from peval.tools import replace_fields, ast_transformer
 from peval.core.gensym import GenSym
-from peval.core.cfg import build_cfg
+from peval.core.cfg import Graph, build_cfg
 from peval.core.expression import peval_expression
+from peval.tools.immutable import immutableadict
+from peval.typing import ConstsDictT, PassOutputT
 
 
 class Value:
 
-    def __init__(self, value=None, undefined=False):
+    def __init__(self, value: typing.Optional[typing.Any]=None, undefined: bool=False) -> None:
         if undefined:
             self.defined = False
             self.value = None
@@ -23,7 +26,7 @@ class Value:
         else:
             return "<" + str(self.value) + ">"
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Value") -> bool:
         return self.defined == other.defined and self.value == other.value
 
     def __ne__(self, other):
@@ -36,7 +39,7 @@ class Value:
             return "Value(value={value})".format(value=repr(self.value))
 
 
-def meet_values(val1, val2):
+def meet_values(val1: Value, val2: Value) -> Value:
     if not val1.defined or not val2.defined:
         return Value(undefined=True)
 
@@ -60,27 +63,27 @@ def meet_values(val1, val2):
 
 class Environment:
 
-    def __init__(self, values=None):
+    def __init__(self, values: typing.Dict[str, Value]) -> None:
         self.values = values if values is not None else {}
 
     @classmethod
-    def from_dict(cls, values):
+    def from_dict(cls, values: ConstsDictT) -> "Environment":
         return cls(values=dict((name, Value(value=value)) for name, value in values.items()))
 
-    def known_values(self):
+    def known_values(self) -> ConstsDictT:
         return dict((name, value.value) for name, value in self.values.items() if value.defined)
 
     def __eq__(self, other):
         return self.values == other.values
 
-    def __ne__(self, other):
+    def __ne__(self, other: "Environment") -> bool:
         return self.values != other.values
 
     def __repr__(self):
         return "Environment(values={values})".format(values=self.values)
 
 
-def meet_envs(env1, env2):
+def meet_envs(env1: Environment, env2: Environment) -> Environment:
 
     lhs = env1.values
     rhs = env2.values
@@ -100,7 +103,7 @@ def meet_envs(env1, env2):
     return Environment(values=result)
 
 
-def my_reduce(func, seq):
+def my_reduce(func: typing.Callable, seq: typing.Iterable[Environment]) -> Environment:
     if len(seq) == 1:
         return seq[0]
     else:
@@ -109,21 +112,32 @@ def my_reduce(func, seq):
 
 class CachedExpression:
 
-    def __init__(self, path, node):
+    def __init__(self, path: typing.List[str], node: ast.expr) -> None:
         self.node = node
         self.path = path
 
 
-def forward_transfer(gen_sym, in_env, statement):
+TempBindingsT = typing.Mapping[str, typing.Any]
 
-    if isinstance(statement, ast.Assign):
-        target = statement.targets[0].id
+def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) -> typing.Tuple[GenSym, Environment, typing.List[CachedExpression], TempBindingsT]:
+
+    if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+        if isinstance(statement, ast.AnnAssign):
+            target = statement.target
+        else:
+            assert len(statement.targets) == 1
+            target = statement.targets[0]
+
+        if isinstance(target, ast.Name):
+            target = target.id
+        elif isinstance(target, (ast.Name, ast.Tuple)):
+            raise ValueError("Destructuring assignment (should have been eliminated by other pass)", target)
+        else:
+            raise ValueError("Incorrect assignment target", target)
+
         result, gen_sym = peval_expression(statement.value, gen_sym, in_env.known_values())
 
         new_values = dict(in_env.values)
-
-        for name in result.mutated_bindings:
-            new_values[name] = Value(undefined=True)
 
         if result.fully_evaluated:
             new_value = Value(value=result.value)
@@ -141,9 +155,6 @@ def forward_transfer(gen_sym, in_env, statement):
 
         new_values = dict(in_env.values)
 
-        for name in result.mutated_bindings:
-            new_values[name] = Value(undefined=True)
-
         new_exprs = [CachedExpression(path=['value'], node=result.node)]
         out_env = Environment(values=new_values)
 
@@ -153,9 +164,6 @@ def forward_transfer(gen_sym, in_env, statement):
         result, gen_sym = peval_expression(statement.test, gen_sym, in_env.known_values())
 
         new_values = dict(in_env.values)
-
-        for name in result.mutated_bindings:
-            new_values[name] = Value(undefined=True)
 
         out_env = Environment(values=new_values)
 
@@ -169,13 +177,14 @@ def forward_transfer(gen_sym, in_env, statement):
 
 class State:
 
-    def __init__(self, out_env, exprs, temp_bindings):
+    def __init__(self, in_env: Environment, out_env: Environment, exprs:  typing.List[CachedExpression], temp_bindings: immutableadict) -> None:
+        self.in_env = in_env
         self.out_env = out_env
         self.exprs = exprs
         self.temp_bindings = temp_bindings
 
 
-def get_sorted_nodes(graph, enter):
+def get_sorted_nodes(graph: Graph, enter: int) -> typing.List[int]:
     sorted_nodes = []
     todo_list = [enter]
     visited = set()
@@ -193,10 +202,10 @@ def get_sorted_nodes(graph, enter):
     return sorted_nodes
 
 
-def maximal_fixed_point(gen_sym, graph, enter, bindings):
+def maximal_fixed_point(gen_sym: GenSym, graph: Graph, enter: int, bindings: ConstsDictT) -> typing.Tuple[typing.List[CachedExpression], TempBindingsT]:
 
     states = dict(
-        (node_id, State(Environment.from_dict(bindings), [], {}))
+        (node_id, State(Environment.from_dict(bindings), Environment.from_dict(bindings), [], {}))
         for node_id in graph.nodes)
     enter_env = Environment.from_dict(bindings)
 
@@ -221,11 +230,13 @@ def maximal_fixed_point(gen_sym, graph, enter, bindings):
         gen_sym, new_out_env, new_exprs, temp_bindings = \
             forward_transfer(gen_sym, new_in_env, graph.nodes[node_id].ast_node)
 
+        # TODO: merge it with the code in the condition above to avoid repetition
+        states[node_id].in_env = new_in_env
         states[node_id].exprs = new_exprs
         states[node_id].temp_bindings = temp_bindings
 
         if new_out_env != states[node_id].out_env:
-            states[node_id] = State(new_out_env, new_exprs, temp_bindings)
+            states[node_id] = State(new_in_env, new_out_env, new_exprs, temp_bindings)
             for dest_id in sorted(graph.children_of(node_id)):
                 if dest_id not in todo_forward_set:
                     todo_forward_set.add(dest_id)
@@ -235,17 +246,33 @@ def maximal_fixed_point(gen_sym, graph, enter, bindings):
     new_exprs = {}
     temp_bindings = {}
     for node_id, state in states.items():
-        new_exprs[node_id] = state.exprs
-        temp_bindings.update(state.temp_bindings)
+
+        node = graph.nodes[node_id].ast_node
+        exprs = list(state.exprs)
+        exprs_temp_bindings = dict(state.temp_bindings)
+
+        # Evaluating annotations only after the MFP has converged,
+        # since they don't introduce new bindings
+        if isinstance(node, ast.AnnAssign):
+            in_env = state.in_env
+            annotation_result, gen_sym = peval_expression(
+                node.annotation, gen_sym, state.in_env.known_values(), create_binding=True)
+            exprs.append(CachedExpression(path=['annotation'], node=annotation_result.node))
+            exprs_temp_bindings.update(annotation_result.temp_bindings)
+
+        new_exprs[node_id] = exprs
+        temp_bindings.update(exprs_temp_bindings)
 
     return new_exprs, temp_bindings
 
 
-def replace_exprs(tree, new_exprs):
+def replace_exprs(tree: ast.FunctionDef, new_exprs: typing.Dict[int, typing.List[CachedExpression]]) -> typing.Union[ast.FunctionDef, ast.Module]:
     return _replace_exprs(tree, ctx=dict(new_exprs=new_exprs))
 
 
-def replace_by_path(obj, path, new_value):
+ReplaceByPathNodeT = typing.Union[ast.If, ast.Assign, ast.Expr, ast.Return]
+
+def replace_by_path(obj: ReplaceByPathNodeT, path: typing.Iterable[str], new_value: ast.expr) -> ReplaceByPathNodeT:
 
     ptr = path[0]
 
@@ -279,7 +306,7 @@ def _replace_exprs(node, ctx, walk_field, **_):
         return node
 
 
-def fold(tree, constants):
+def fold(tree: ast.AST, constants: ConstsDictT) -> PassOutputT:
     statements = tree.body
     cfg = build_cfg(statements)
     gen_sym = GenSym.for_tree(tree)

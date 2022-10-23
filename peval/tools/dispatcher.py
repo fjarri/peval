@@ -1,5 +1,12 @@
 import ast
 import types
+import typing
+from .immutable import immutabledict
+
+StateT = immutabledict
+ContextT = immutabledict
+HandlerResultT = typing.Tuple[StateT, ast.AST]
+HandlerT = typing.Callable[[StateT, ast.AST, ContextT], HandlerResultT]
 
 
 class Dispatcher:
@@ -10,19 +17,19 @@ class Dispatcher:
 
     ``handler_obj`` can be either a function with the signature::
 
-            def handler(node, *args, **kwds)
+        def handler(*args, **kwds)
 
     or a class with the static methods::
 
         @staticmethod
-        def handle_<tp>(node, *args, **kwds)
+        def handle_<tp>(*args, **kwds)
 
     where ``<tp>`` is the name of the type that this function will handle
     (e.g., ``handle_FunctionDef`` for ``ast.FunctionDef``).
     The class can also define the default handler::
 
         @staticmethod
-        def handle(node, *args, **kwds)
+        def handle(*args, **kwds)
 
     If it is not defined, the ``default_handler`` value will be used
     (which must be a function with the same signature as above).
@@ -30,7 +37,7 @@ class Dispatcher:
     a ``ValueError`` is thrown.
     """
 
-    def __init__(self, handler_obj, default_handler=None):
+    def __init__(self, handler_obj: HandlerT, default_handler: typing.Optional[HandlerT]=None) -> None:
         if isinstance(handler_obj, types.FunctionType):
             self._handlers = {}
             self._default_handler = handler_obj

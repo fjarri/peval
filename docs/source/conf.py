@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'peval'
-copyright = u'2014, Bogdan Opanchuk'
+copyright = u'2016, Bogdan Opanchuk'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -101,7 +101,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

@@ -2,6 +2,8 @@ import pytest
 
 from peval.tags import pure, get_pure_tag, inline, get_inline_tag
 
+from tests.utils import function_from_source
+
 
 def test_pure_tag():
 
@@ -42,8 +44,10 @@ def test_inline_prohibit_generator():
 
 def test_inline_prohibit_async():
 
-    async def func(x):
-        return x
+    func = function_from_source("""
+        async def func(x):
+            return x
+        """).eval()
 
     with pytest.raises(ValueError):
         func = inline(func)

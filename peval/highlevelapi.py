@@ -1,12 +1,16 @@
 import inspect
 from functools import lru_cache
+import typing
 
 from peval.core.function import Function, has_nested_definitions, is_async
-from peval.components import inline_functions, prune_cfg, prune_assignments, fold
+from peval.typing import ConstsDictT, PassOutputT
+from peval.components import (
+    inline_functions, prune_cfg, prune_assignments, fold, peval_function_header)
 from peval.tools import ast_equal
+from ast import AST
 
 
-def _run_components(tree, constants):
+def _run_components(tree: AST, constants: ConstsDictT) -> PassOutputT:
     while True:
         new_tree = tree
         new_constants = constants
@@ -23,7 +27,7 @@ def _run_components(tree, constants):
     return new_tree, new_constants
 
 
-def partial_apply(func, *args, **kwds):
+def partial_apply(func: typing.Callable, *args, **kwds) -> typing.Callable:
     """
     Same as :func:`partial_eval`, but in addition uses the provided values of
     positional and keyword arguments in the partial evaluation.
@@ -42,19 +46,25 @@ def partial_apply(func, *args, **kwds):
     else:
         bound_function = function
 
-    new_tree, bindings = _run_components(
-        bound_function.tree,
-        bound_function.get_external_variables())
+    ext_vars = bound_function.get_external_variables()
+
+    # We don't need to run signature evaluation several times until convergence,
+    # since there is no inlining/folding going on.
+    new_tree, signature_bindings = peval_function_header(bound_function.tree, ext_vars)
+
+    # The components do have to be run iteratively until convergence for the body of the function.
+    new_tree, body_bindings = _run_components(new_tree, ext_vars)
 
     globals_ = dict(bound_function.globals)
-    globals_.update(bindings)
+    globals_.update(signature_bindings)
+    globals_.update(body_bindings)
 
     new_function = bound_function.replace(tree=new_tree, globals_=globals_)
 
     return new_function.eval()
 
 
-def partial_eval(func):
+def partial_eval(func: typing.Callable) -> typing.Callable:
     """
     Returns a partially evaluated version of ``func``, using the values of
     associated global and closure variables.
@@ -62,7 +72,7 @@ def partial_eval(func):
     return partial_apply(func)
 
 
-def specialize_on(names, maxsize=None):
+def specialize_on(names: typing.Union[str, typing.Tuple[str, str]], maxsize=None) -> typing.Callable:
     """
     A decorator that wraps a function, partially evaluating it with the parameters
     defined by ``names`` (can be a string or an iterable of strings) being fixed.

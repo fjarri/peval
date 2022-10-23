@@ -1,9 +1,22 @@
 language: python
+branches:
+  only:
+    - master
+    - develop
+# Workaround to make py3.7 work; see https://github.com/travis-ci/travis-ci/issues/9069
+sudo: required
+dist: jammy
 python:
-  - "3.5"
+  - "3.7"
+  - "3.8"
+  - "3.9"
+  - "3.10"
+  - "nightly"
+matrix:
+  allow_failures:
+    - python: nightly
 install:
-  - pip install coveralls
-  - pip install pytest-cov
+  - pip install --upgrade pip setuptools setuptools-scm build wheel coveralls pytest-cov
   - pip install .
 # command to run tests
 script:

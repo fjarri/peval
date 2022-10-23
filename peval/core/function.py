@@ -8,21 +8,28 @@ import inspect
 from functools import reduce
 from types import FunctionType
 from collections import OrderedDict
+import typing
 
 import astunparse
 
-from peval.tools import unindent, replace_fields, immutableadict, ast_inspector
+from peval.tools import unindent, replace_fields, immutableadict, ast_inspector, ast_transformer
 from peval.core.gensym import GenSym
 from peval.core.reify import reify_unwrapped
 from peval.core.scope import analyze_scope
+from peval.typing import ConstsDictT, NodeTypeIsInstanceCriteriaT
 
 
 SOURCE_ATTRIBUTE = '_peval_source'
 
-
-FUTURE_NAMES = (
-    'generator_stop',
-    )
+if sys.version_info[:2] >= (3, 5):
+    FUTURE_NAMES = (
+        'generator_stop',
+        )
+else:
+    # peval supports Python 3.5+, but readthedocs runs Python 3.4,
+    # and needs to import our module in order to pick up docstrings,
+    # and ``generator_stop`` did not exist back then.
+    FUTURE_NAMES = ()
 
 FUTURE_FEATURES = dict((name, getattr(__future__, name)) for name in FUTURE_NAMES)
 
@@ -30,16 +37,16 @@ FUTURE_FLAGS = reduce(
     lambda x, y: x | y, [feature.compiler_flag for feature in FUTURE_FEATURES.values()], 0)
 
 
-def eval_function_def(function_def, globals_=None, flags=None):
+def eval_function_def(function_def: typing.Union[ast.AsyncFunctionDef, ast.FunctionDef], globals_=None, flags: typing.Optional[int]=None) -> typing.Callable:
     """
     Evaluates an AST of a function definition with an optional dictionary of globals.
     Returns a callable function (a ``types.FunctionType`` object).
     """
 
-    assert type(function_def) == ast.FunctionDef
+    assert type(function_def) in (ast.FunctionDef, ast.AsyncFunctionDef)
 
     # Making a copy before mutating
-    module = ast.Module(body=[copy.deepcopy(function_def)])
+    module = ast.Module(body=[copy.deepcopy(function_def)], type_ignores=[])
 
     ast.fix_missing_locations(module)
 
@@ -54,7 +61,7 @@ def eval_function_def(function_def, globals_=None, flags=None):
     return locals_[function_def.name]
 
 
-def eval_function_def_as_closure(function_def, closure_names, globals_=None, flags=None):
+def eval_function_def_as_closure(function_def: ast.FunctionDef, closure_names: typing.List[str], globals_: typing.Optional[ConstsDictT]=None, flags: typing.Optional[int]=None) -> typing.Callable:
     """
     Evaluates an AST of a function definition inside a closure with the variables
     from ``closure_names`` set to ``None``, and an optional dictionary of globals.
@@ -66,8 +73,9 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
         (filled with ``None``) must be substituted by actual closure cells
         that will be used during the call.
     """
+    def_type = type(function_def)
+    assert def_type in (ast.FunctionDef, ast.AsyncFunctionDef)
 
-    assert type(function_def) == ast.FunctionDef
     none = ast.NameConstant(value=None)
 
     # We can't possibly recreate ASTs of existing closure variables
@@ -83,6 +91,7 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
         for name in closure_names]
 
     empty_args = ast.arguments(
+        posonlyargs=[],
         args=[],
         vararg=None,
         kwonlyargs=[],
@@ -90,7 +99,7 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
         defaults=[],
         kw_defaults=[])
 
-    wrapper_def = ast.FunctionDef(
+    wrapper_def = def_type(
         name='__peval_wrapper',
         args=empty_args,
         decorator_list=[],
@@ -103,7 +112,7 @@ def eval_function_def_as_closure(function_def, closure_names, globals_=None, fla
     return wrapper()
 
 
-def get_closure(func):
+def get_closure(func: typing.Callable) -> OrderedDict:
     """
     Extracts names and values of closure variables from a function.
     Returns a tuple ``(names, cells)``, where ``names`` is a tuple of strings
@@ -118,7 +127,7 @@ def get_closure(func):
         (name, val) for name, val in zip(closure_names, closure_vals))
 
 
-def filter_arglist(args, defaults, bound_argnames):
+def filter_arglist(args: typing.Iterable[ast.arg], defaults, bound_argnames: typing.Set[str]):
     """
     Filters a list of function argument nodes (``ast.arg``)
     and corresponding defaults to exclude all arguments with the names
@@ -137,7 +146,7 @@ def filter_arglist(args, defaults, bound_argnames):
     return new_args, new_defaults
 
 
-def filter_arguments(arguments, bound_argnames):
+def filter_arguments(arguments: ast.arguments, bound_argnames: typing.Set[str]) -> ast.arguments:
     """
     Filters a node containing function arguments (an ``ast.arguments`` object)
     to exclude all arguments with the names present in ``bound_arguments``.
@@ -166,34 +175,55 @@ def filter_arguments(arguments, bound_argnames):
     return ast.arguments(**new_params)
 
 
-def filter_function_def(function_def, bound_argnames):
+def filter_function_def(function_def: ast.FunctionDef, bound_argnames: typing.Set[str]) -> ast.FunctionDef:
     """
-    Filters a node containing a function definition (an ``ast.FunctionDef`` object)
+    Filters a node containing a function definition
+    (an ``ast.FunctionDef`` or an ``ast.AsyncFunctionDef`` object)
     to exclude all arguments with the names present in ``bound_arguments``.
     Returns the new ``ast.arguments`` node.
     """
-
-    assert type(function_def) == ast.FunctionDef
+    def_type = type(function_def)
+    assert def_type in (ast.FunctionDef, ast.AsyncFunctionDef)
 
     new_args = filter_arguments(function_def.args, bound_argnames)
 
-    params = dict(
+    return def_type(
         name=function_def.name,
         args=new_args,
         body=function_def.body,
         decorator_list=function_def.decorator_list,
         returns=function_def.returns)
 
-    return ast.FunctionDef(**params)
+
+@ast_transformer
+def parse_annotations(node, **_):
+    if isinstance(node, ast.arg) and isinstance(node.annotation, ast.Str):
+        annotation = ast.parse(node.annotation.s).body[0].value
+        node = replace_fields(node, annotation=annotation)
+    return node
+
 
 
 class Function(object):
     """
     A wrapper for functions providing transformations to and from AST
     and simplifying operations with associated global and closure variables.
+
+    .. attribute:: tree
+
+        An AST tree of the function (including the header and decorators, if any)
+
+    .. attribute:: globals
+
+        A dictionary of global variables associated with the function.
+
+    .. attribute:: closure_vals
+
+        A dictionary of closure variables associated with the function.
     """
 
-    def __init__(self, tree, globals_, closure_vals, compiler_flags):
+    def __init__(self, tree: typing.Union[ast.AsyncFunctionDef, ast.FunctionDef], globals_, closure_vals, compiler_flags: int) -> None:
+
         self.tree = tree
         self.globals = globals_
         self.closure_vals = closure_vals
@@ -212,7 +242,7 @@ class Function(object):
 
         self.future_features = immutableadict(future_features)
 
-    def get_external_variables(self):
+    def get_external_variables(self) -> ConstsDictT:
         """
         Returns a unified dictionary of external variables for this function
         (both globals and closure variables).
@@ -222,17 +252,26 @@ class Function(object):
             variables[name] = val.cell_contents
         return variables
 
-    def get_source(self):
+    def get_source(self) -> str:
+        """
+        Generates the function's source code based on its tree.
+        """
         return astunparse.unparse(self.tree)
 
     @classmethod
-    def from_object(cls, func, ignore_decorators=False):
+    def from_object(cls, func: typing.Callable, ignore_decorators: bool=False) -> "Function":
         """
         Creates a ``Function`` object from an evaluated function.
         """
 
         src = getsource(func)
         tree = ast.parse(src).body[0]
+
+        # Annotations may be strings, and starting from Py3.8 they will always be strings.
+        # We need them as actual AST in order to know what bindings to leave in globals,
+        # and to partially evaluate them later.
+        tree = parse_annotations(tree)
+
         if ignore_decorators:
             tree = replace_fields(tree, decorator_list=[])
 
@@ -269,7 +308,7 @@ class Function(object):
 
         return cls(tree, globals_, closure_vals, compiler_flags)
 
-    def bind_partial(self, *args, **kwds):
+    def bind_partial(self, *args, **kwds) -> "Function":
         """
         Binds the provided positional and keyword arguments
         and returns a new ``Function`` object with an updated signature.
@@ -302,7 +341,7 @@ class Function(object):
 
         return Function(new_tree, new_globals, self.closure_vals, self._compiler_flags)
 
-    def eval(self):
+    def eval(self) -> typing.Callable:
         """
         Evaluates and returns a callable function.
         """
@@ -336,7 +375,7 @@ class Function(object):
 
         return func
 
-    def replace(self, tree=None, globals_=None):
+    def replace(self, tree: typing.Optional[ast.FunctionDef]=None, globals_: typing.Optional[ConstsDictT]=None) -> "Function":
         """
         Replaces the AST and/or globals and returns a new ``Function`` object.
         If some closure variables are not used by a new tree,
@@ -360,7 +399,7 @@ class Function(object):
         return Function(tree, globals_, new_closure_vals, self._compiler_flags)
 
 
-def getsource(func):
+def getsource(func: typing.Callable) -> str:
     """
     Returns the source of a function ``func``.
     Falls back to ``inspect.getsource()`` for regular functions,
@@ -385,17 +424,19 @@ def _has_nodes(state, node, ctx, skip_fields, **_):
     else:
         return state
 
-def has_nodes(node, node_types):
+def has_nodes(node: ast.AST, node_types: NodeTypeIsInstanceCriteriaT) -> bool:
     return _has_nodes(dict(nodes_found=False), node, ctx=dict(node_types=node_types)).nodes_found
 
 
-def has_nested_definitions(function):
-    return has_nodes(function.tree.body, (ast.FunctionDef, ast.ClassDef, ast.Lambda))
+def has_nested_definitions(function: Function) -> bool:
+    return has_nodes(
+        function.tree.body,
+        (ast.AsyncFunctionDef, ast.FunctionDef, ast.ClassDef, ast.Lambda))
 
 
-def is_a_generator(function):
+def is_a_generator(function: Function) -> bool:
     return has_nodes(function.tree, (ast.Yield, ast.YieldFrom))
 
 
-def is_async(function):
+def is_async(function: Function) -> bool:
     return type(function.tree) == ast.AsyncFunctionDef

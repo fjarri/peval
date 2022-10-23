@@ -41,7 +41,7 @@ The API is identical to that of ``functools.partial()``::
     power_27 = peval.partial_apply(power, n=27)
 
 You must mark the functions that you want inlined (maybe recursively) with :func:`peval.inline`.
-If want some function to be evaluated during partial evaluation, mark it with :func:`peval.pure` (if it is not, in fact, pure, the results are unpredictable).
+If you want some function to be evaluated during partial evaluation, mark it with :func:`peval.pure` (if it is not, in fact, pure, the results are unpredictable).
 
 
 Implementation details
@@ -83,3 +83,4 @@ API reference
 =============
 
 .. automodule:: peval
+    :members:

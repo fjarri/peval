@@ -6,6 +6,7 @@ Inspired by the ``Walker`` class from ``macropy``.
 """
 
 import ast
+import typing
 
 from peval.tools.dispatcher import Dispatcher
 from peval.tools.immutable import immutableadict
@@ -15,11 +16,10 @@ def ast_walker(handler):
     """
     A generic AST walker decorator.
     Decorates either a function or a class (if dispatching based on node type is required).
-    See :py:class:`~peval.tools.Dispatcher` for the details of the required class structure.
+    ``handler`` will be wrapped in a :py:class:`~peval.Dispatcher` instance;
+    see :py:class:`~peval.Dispatcher` for the details of the required class structure.
 
-    Returns a callable with the signature
-
-    ::
+    Returns a callable with the signature::
 
         def walker(state, node, ctx=None)
 
@@ -35,17 +35,18 @@ def ast_walker(handler):
         as the corresponding parameter.
         Does not mutate ``node``.
 
-    If ``handler`` is a function, it will be called for every node during the AST traversal
-    (depth-first, pre-order).
-    It must have the signature
-
-    ::
+    ``handler`` will be invoked for every node during the AST traversal (depth-first, pre-order).
+    The ``handler`` function, if it is a function, or its static methods, if it is a class
+    must have the signature::
 
         def handler([state, node, ctx, prepend, visit_after, visiting_after,
             skip_fields, walk_field,] **kwds)
 
     The names of the arguments must be exactly as written here,
     but their order is not significant (they will be passed as keywords).
+
+    If ``handler`` is a class, the default handler is a "pass-through" function
+    that does not change the node or the state.
 
     :param state: the (supposedly immutable) state object passed during the initial call.
     :param node: the current node
@@ -72,6 +73,7 @@ def ast_walker(handler):
         If the value contains a list of statements, ``block_context`` must be set to ``True``,
         so that ``prepend`` could work correctly.
     :returns: must return a tuple ``(new_state, new_node)``, where ``new_node`` is one of:
+
         * ``None``, in which case the corresponding node will be removed from the parent list
           or the parent node field.
         * The passed ``node`` (unchanged).
@@ -85,17 +87,13 @@ def ast_walker(handler):
           which will be spliced in place of the node.
           Same as in the previous case, these new nodes
           will not be automatically traversed.
-
-    If the decorator target is a class, it must contain several static methods
-    with the signatures as above.
-    The default handler is a "pass-through" function that does not change the node or the state.
     """
     return _Walker(handler, transform=True, inspect=True)
 
 
 def ast_transformer(handler):
     """
-    A shortcut for ``ast_walker()`` with no changing state.
+    A shortcut for :py:func:`~peval.ast_walker` with no changing state.
     Therefore:
 
     * the resulting walker has the signature ``def walker(node, ctx=None)``
@@ -110,7 +108,8 @@ def ast_transformer(handler):
 
 def ast_inspector(handler):
     """
-    A shortcut for ``ast_walker()`` which does not transform the tree, but only collects data.
+    A shortcut for :py:func:`~peval.ast_walker` which does not transform the tree,
+    but only collects data.
     Therefore:
 
     * the resulting walker returns only the resulting state;
@@ -128,7 +127,7 @@ _BLOCK_FIELDS = ('body', 'orelse')
 
 class _Walker:
 
-    def __init__(self, handler, inspect=False, transform=False):
+    def __init__(self, handler: typing.Callable, inspect: bool=False, transform: bool=False) -> None:
 
         self._transform = transform
         self._inspect = inspect
@@ -155,7 +154,7 @@ class _Walker:
 
         self._handler = Dispatcher(handler, default_handler=default_handler)
 
-    def _walk_list(self, state, lst, ctx, block_context=False):
+    def _walk_list(self, state: typing.Optional[immutableadict], lst: typing.List[typing.Any], ctx: typing.Optional[immutableadict], block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.List[typing.Any]]:
         """
         Traverses a list of AST nodes.
         If ``block_context`` is ``True``, the list contains statements
@@ -205,7 +204,7 @@ class _Walker:
 
         return new_state, new_lst
 
-    def _walk_field(self, state, value, ctx, block_context=False):
+    def _walk_field(self, state: typing.Optional[immutableadict], value:  typing.Any, ctx: typing.Optional[immutableadict], block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
         """
         Traverses a single AST node field.
         """
@@ -224,7 +223,7 @@ class _Walker:
     # In these three functions `ctx` goes first because it makes it easier
     # to add it to the list of arguments later when `self._walk_field_user()` is called
 
-    def _transform_field(self, ctx, value, block_context=False):
+    def _transform_field(self, ctx: immutableadict, value: typing.Any, block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
         return self._walk_field(None, value, ctx, block_context=block_context)[1]
 
     def _inspect_field(self, ctx, state, value, block_context=False):
@@ -233,7 +232,7 @@ class _Walker:
     def _transform_inspect_field(self, ctx, state, value, block_context=False):
         return self._walk_field(state, value, ctx, block_context=block_context)
 
-    def _walk_fields(self, state, node, ctx):
+    def _walk_fields(self, state: typing.Optional[immutableadict], node: typing.Optional[ast.AST], ctx: typing.Optional[immutableadict]) -> ast.AST:
         """
         Traverses all fields of an AST node.
         """
@@ -242,6 +241,9 @@ class _Walker:
             new_fields = {}
 
         new_state = state
+        if node is None:
+            return new_state, node
+
         for field, value in ast.iter_fields(node):
 
             block_context = field in _BLOCK_FIELDS and type(value) == list
@@ -258,7 +260,7 @@ class _Walker:
         else:
             return new_state, node
 
-    def _handle_node(self, state, node, ctx, list_context=False, visiting_after=False):
+    def _handle_node(self, state: typing.Optional[immutableadict], node: ast.AST, ctx: typing.Optional[immutableadict], list_context: bool=False, visiting_after: bool=False) -> typing.Any:
 
         def prepend(nodes):
             self._current_block_stack[-1].extend(nodes)
@@ -310,7 +312,7 @@ class _Walker:
 
         return new_state, new_node, to_visit_after[0], to_skip_fields[0]
 
-    def _walk_node(self, state, node, ctx, list_context=False):
+    def _walk_node(self, state: typing.Optional[immutableadict], node:  ast.AST, ctx: typing.Optional[immutableadict], list_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], ast.AST]:
         """
         Traverses an AST node and its fields.
         """
@@ -327,7 +329,7 @@ class _Walker:
 
         return new_state, new_node
 
-    def __call__(self, *args, ctx=None):
+    def __call__(self, *args, ctx=None) -> typing.Union[typing.Optional[immutableadict], ast.AST, typing.Tuple[typing.Optional[immutableadict], ast.AST]]:
 
         if self._transform and self._inspect:
             if len(args) != 2:
