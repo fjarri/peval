@@ -394,7 +394,10 @@ def _peval_comprehension_ifs(state, ifs, ctx):
         if is_known_value(joint_ifs_result):
             return state, joint_ifs_result
         else:
-            return state, joint_ifs_result.values
+            if isinstance(joint_ifs_result, ast.BoolOp):
+                return state, joint_ifs_result.values
+            else:
+                return state, [joint_ifs_result]
     else:
         return state, KnownValue(value=True)
 
