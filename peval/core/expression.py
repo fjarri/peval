@@ -10,7 +10,7 @@ from peval.core.callable import inspect_callable
 from peval.typing import ConstsDictT
 from peval.tools import immutabledict, fold_and, map_accum
 from peval.tags import pure
-import peval.tools.immutable
+from peval.tools.immutable import immutableadict, immutableadict
 
 
 UNARY_OPS = {
@@ -539,14 +539,12 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 @Dispatcher
 class _peval_expression_dispatcher:
     @staticmethod
-    def handle(state: peval.tools.immutable.immutabledict, node: ast.AST, _: immutableadict):
+    def handle(state: immutabledict, node: ast.AST, _: immutableadict):
         # Pass through in case of type(node) == KnownValue
         return state, node
 
     @staticmethod
-    def handle_Name(
-        state: peval.tools.immutable.immutabledict, node: ast.Name, ctx: immutableadict
-    ):
+    def handle_Name(state: immutabledict, node: ast.Name, ctx: immutableadict):
         name = node.id
         if name in ctx.bindings:
             return state, KnownValue(ctx.bindings[name], preferred_name=name)
@@ -554,22 +552,20 @@ class _peval_expression_dispatcher:
             return state, node
 
     @staticmethod
-    def handle_Num(state: peval.tools.immutable.immutabledict, node: ast.Num, _: immutableadict):
+    def handle_Num(state: immutabledict, node: ast.Num, _: immutableadict):
         return state, KnownValue(node.n)
 
     @staticmethod
-    def handle_Str(state: peval.tools.immutable.immutabledict, node: ast.Str, _: immutableadict):
+    def handle_Str(state: immutabledict, node: ast.Str, _: immutableadict):
         return state, KnownValue(node.s)
 
     @staticmethod
-    def handle_Bytes(
-        state: peval.tools.immutable.immutabledict, node: ast.Bytes, _: immutableadict
-    ):
+    def handle_Bytes(state: immutabledict, node: ast.Bytes, _: immutableadict):
         return state, KnownValue(node.s)
 
     @staticmethod
     def handle_NameConstant(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.NameConstant,
         _: immutableadict,
     ):
@@ -577,7 +573,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Constant(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.Constant,
         _: immutableadict,
     ):
@@ -585,21 +581,19 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_BoolOp(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.BoolOp,
         ctx: immutableadict,
     ):
         return peval_boolop(state, ctx, node.op, node.values)
 
     @staticmethod
-    def handle_BinOp(
-        state: peval.tools.immutable.immutabledict, node: ast.BinOp, ctx: immutableadict
-    ):
+    def handle_BinOp(state: immutabledict, node: ast.BinOp, ctx: immutableadict):
         return peval_binop(state, ctx, node.op, node.left, node.right)
 
     @staticmethod
     def handle_UnaryOp(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.UnaryOp,
         ctx: immutableadict,
     ):
@@ -611,16 +605,14 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Lambda(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.Lambda,
         ctx: immutableadict,
     ):
         raise NotImplementedError
 
     @staticmethod
-    def handle_IfExp(
-        state: peval.tools.immutable.immutabledict, node: ast.IfExp, ctx: immutableadict
-    ):
+    def handle_IfExp(state: immutabledict, node: ast.IfExp, ctx: immutableadict):
         state, test_value = _peval_expression(state, node.test, ctx)
         if is_known_value(test_value):
             success, bool_value = try_call(bool, args=(test_value.value,))
@@ -638,9 +630,7 @@ class _peval_expression_dispatcher:
         )
 
     @staticmethod
-    def handle_Dict(
-        state: peval.tools.immutable.immutabledict, node: ast.Dict, ctx: immutableadict
-    ):
+    def handle_Dict(state: immutabledict, node: ast.Dict, ctx: immutableadict):
 
         state, pairs = map_peval_expression(state, zip(node.keys, node.values), ctx)
         can_eval = all_known_values(pairs)
@@ -654,9 +644,7 @@ class _peval_expression_dispatcher:
             return state, new_node
 
     @staticmethod
-    def handle_List(
-        state: peval.tools.immutable.immutabledict, node: ast.List, ctx: immutableadict
-    ):
+    def handle_List(state: immutabledict, node: ast.List, ctx: immutableadict):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -669,9 +657,7 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_Tuple(
-        state: peval.tools.immutable.immutabledict, node: ast.Tuple, ctx: immutableadict
-    ):
+    def handle_Tuple(state: immutabledict, node: ast.Tuple, ctx: immutableadict):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -684,7 +670,7 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_Set(state: peval.tools.immutable.immutabledict, node: ast.Set, ctx: immutableadict):
+    def handle_Set(state: immutabledict, node: ast.Set, ctx: immutableadict):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -698,7 +684,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_ListComp(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.ListComp,
         ctx: immutableadict,
     ):
@@ -706,7 +692,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_SetComp(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.SetComp,
         ctx: immutableadict,
     ):
@@ -714,7 +700,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_DictComp(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.DictComp,
         ctx: immutableadict,
     ):
@@ -722,16 +708,14 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_GeneratorExp(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.GeneratorExp,
         ctx: immutableadict,
     ):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_Yield(
-        state: peval.tools.immutable.immutabledict, node: ast.Yield, ctx: immutableadict
-    ):
+    def handle_Yield(state: immutabledict, node: ast.Yield, ctx: immutableadict):
         state, result = _peval_expression(state, node.value, ctx)
 
         # We cannot evaluate a yield expression,
@@ -741,7 +725,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_YieldFrom(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.YieldFrom,
         ctx: immutableadict,
     ):
@@ -754,21 +738,19 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Compare(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.Compare,
         ctx: immutableadict,
     ):
         return peval_compare(state, ctx, node)
 
     @staticmethod
-    def handle_Call(
-        state: peval.tools.immutable.immutabledict, node: ast.Call, ctx: immutableadict
-    ):
+    def handle_Call(state: immutabledict, node: ast.Call, ctx: immutableadict):
         return peval_call(state, ctx, node.func, args=node.args, keywords=node.keywords)
 
     @staticmethod
     def handle_Attribute(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.Attribute,
         ctx: immutableadict,
     ):
@@ -783,7 +765,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Subscript(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.Subscript,
         ctx: immutableadict,
     ):
@@ -803,9 +785,7 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value, slice=new_slice)
 
     @staticmethod
-    def handle_Index(
-        state: peval.tools.immutable.immutabledict, node: ast.Index, ctx: immutableadict
-    ):
+    def handle_Index(state: immutabledict, node: ast.Index, ctx: immutableadict):
         state, result = _peval_expression(state, node.value, ctx)
         if is_known_value(result):
             return state, KnownValue(value=result.value)
@@ -813,9 +793,7 @@ class _peval_expression_dispatcher:
             return state, result
 
     @staticmethod
-    def handle_Slice(
-        state: peval.tools.immutable.immutabledict, node: ast.Slice, ctx: immutableadict
-    ):
+    def handle_Slice(state: immutabledict, node: ast.Slice, ctx: immutableadict):
         state, results = map_peval_expression(state, (node.lower, node.upper, node.step), ctx)
         # how do we handle None values in nodes? Technically, they are known values
         if all_known_values_or_none(results):
@@ -827,7 +805,7 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_ExtSlice(
-        state: peval.tools.immutable.immutabledict,
+        state: immutabledict,
         node: ast.ExtSlice,
         ctx: immutableadict,
     ):

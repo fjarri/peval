@@ -6,12 +6,12 @@ from peval.core.scope import analyze_scope
 from peval.tools.immutable import immutableset, immutableadict
 from peval.core.gensym import GenSym
 from peval.typing import NameNodeT
-import peval.tools.immutable
+from peval.tools.immutable import immutabledict
 
 
 def _visit_local(
     gen_sym: GenSym, node: NameNodeT, to_mangle: immutableset, mangled: immutableadict
-) -> Tuple[GenSym, NameNodeT, peval.tools.immutable.immutabledict]:
+) -> Tuple[GenSym, NameNodeT, immutabledict]:
     """
     Replacing known variables with literal values
     """
