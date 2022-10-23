@@ -6,14 +6,9 @@ from peval.core.gensym import GenSym
 from peval.typing import ConstantOrNameNodeT, ConsantOrASTNodeT
 
 
-if sys.version_info[:2] >= (3, 8):
-    NONE_NODE = ast.Constant(value=None, kind=None)
-    FALSE_NODE = ast.Constant(value=False, kind=None)
-    TRUE_NODE = ast.Constant(value=True, kind=None)
-else:
-    NONE_NODE = ast.NameConstant(value=None)
-    FALSE_NODE = ast.NameConstant(value=False)
-    TRUE_NODE = ast.NameConstant(value=True)
+NONE_NODE = ast.Constant(value=None, kind=None)
+FALSE_NODE = ast.Constant(value=False, kind=None)
+TRUE_NODE = ast.Constant(value=True, kind=None)
 
 
 class KnownValue(object):
@@ -47,25 +42,13 @@ def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool = False) -> 
     value = kvalue.value
 
     if value is True or value is False or value is None:
-        if sys.version_info[:2] >= (3, 8):
-            return ast.Constant(value=value, kind=None), gen_sym, {}
-        else:
-            return ast.NameConstant(value=value), gen_sym, {}
+        return ast.Constant(value=value, kind=None), gen_sym, {}
     elif type(value) == str:
-        if sys.version_info[:2] >= (3, 8):
-            return ast.Constant(value=value, kind=None), gen_sym, {}
-        else:
-            return ast.Str(s=value), gen_sym, {}
+        return ast.Constant(value=value, kind=None), gen_sym, {}
     elif type(value) == bytes:
-        if sys.version_info[:2] >= (3, 8):
-            return ast.Constant(value=value, kind=None), gen_sym, {}
-        else:
-            return ast.Bytes(s=value), gen_sym, {}
+        return ast.Constant(value=value, kind=None), gen_sym, {}
     elif type(value) in (int, float, complex):
-        if sys.version_info[:2] >= (3, 8):
-            return ast.Constant(value=value, kind=None), gen_sym, {}
-        else:
-            return ast.Num(n=value), gen_sym, {}
+        return ast.Constant(value=value, kind=None), gen_sym, {}
     else:
         if kvalue.preferred_name is None or create_binding:
             name, gen_sym = gen_sym("temp")

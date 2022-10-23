@@ -280,7 +280,7 @@ class Function(object):
         src = getsource(func)
         tree = ast.parse(src).body[0]
 
-        # Annotations may be strings, and starting from Py3.8 they will always be strings.
+        # Annotations are always strings since Py3.8.
         # We need them as actual AST in order to know what bindings to leave in globals,
         # and to partially evaluate them later.
         tree = parse_annotations(tree)

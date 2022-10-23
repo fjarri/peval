@@ -1,7 +1,5 @@
 First issues:
 
-- Figure out the bug on 3.8 nightly (https://travis-ci.org/fjarri/peval/jobs/573315684). The current pyenv version does not have it, must be something new they introduced. Check in some time.
-
 - Convert TODO and License to Markdown, remove TODO from github?
 
 - in `test_callable` remove things related to inheritance from `(object)`
