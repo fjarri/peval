@@ -5,7 +5,12 @@ import typing
 from peval.core.function import Function, has_nested_definitions, is_async
 from peval.typing import ConstsDictT, PassOutputT
 from peval.components import (
-    inline_functions, prune_cfg, prune_assignments, fold, peval_function_header)
+    inline_functions,
+    prune_cfg,
+    prune_assignments,
+    fold,
+    peval_function_header,
+)
 from peval.tools import ast_equal
 from ast import AST
 
@@ -36,7 +41,8 @@ def partial_apply(func: typing.Callable, *args, **kwds) -> typing.Callable:
 
     if has_nested_definitions(function):
         raise ValueError(
-            "A partially evaluated function cannot have nested function or class definitions")
+            "A partially evaluated function cannot have nested function or class definitions"
+        )
 
     if is_async(function):
         raise ValueError("A partially evaluated function cannot be an async coroutine")
@@ -72,7 +78,9 @@ def partial_eval(func: typing.Callable) -> typing.Callable:
     return partial_apply(func)
 
 
-def specialize_on(names: typing.Union[str, typing.Tuple[str, str]], maxsize=None) -> typing.Callable:
+def specialize_on(
+    names: typing.Union[str, typing.Tuple[str, str]], maxsize=None
+) -> typing.Callable:
     """
     A decorator that wraps a function, partially evaluating it with the parameters
     defined by ``names`` (can be a string or an iterable of strings) being fixed.
@@ -91,26 +99,26 @@ def specialize_on(names: typing.Union[str, typing.Tuple[str, str]], maxsize=None
         if not names_set.issubset(signature.parameters):
             missing_names = names_set.intersection(signature.parameters)
             raise ValueError(
-                "The provided function does not have parameters: "
-                + ", ".join(missing_names))
+                "The provided function does not have parameters: " + ", ".join(missing_names)
+            )
 
         @lru_cache(maxsize=maxsize)
         def get_pevaled_func(args):
-            return partial_apply(func, **{name:val for name, val in args})
+            return partial_apply(func, **{name: val for name, val in args})
 
         def _wrapper(*args, **kwds):
             bargs = signature.bind(*args, **kwds)
             call_arguments = bargs.arguments.copy()
             for name in list(bargs.arguments):
                 if name not in names_set:
-                    del bargs.arguments[name] # automatically changes .args and .kwargs
+                    del bargs.arguments[name]  # automatically changes .args and .kwargs
                 else:
                     del call_arguments[name]
 
             cache_args = tuple((name, val) for name, val in bargs.arguments.items())
             pevaled_func = get_pevaled_func(cache_args)
 
-            bargs.arguments = call_arguments # automatically changes .args and .kwargs
+            bargs.arguments = call_arguments  # automatically changes .args and .kwargs
 
             return pevaled_func(*bargs.args, **bargs.kwargs)
 

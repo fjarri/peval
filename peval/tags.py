@@ -12,7 +12,7 @@ def pure(func: typing.Callable) -> typing.Callable:
 
 
 def get_pure_tag(func: typing.Callable) -> typing.Optional[bool]:
-    return getattr(func, '__peval_pure__', None)
+    return getattr(func, "__peval_pure__", None)
 
 
 def inline(func: typing.Callable) -> typing.Callable:
@@ -38,4 +38,4 @@ def inline(func: typing.Callable) -> typing.Callable:
 
 
 def get_inline_tag(func: typing.Callable) -> typing.Optional[bool]:
-    return getattr(func, '__peval_inline__', None)
+    return getattr(func, "__peval_inline__", None)

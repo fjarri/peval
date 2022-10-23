@@ -34,43 +34,63 @@ def test_simple_reify():
 
     check_reify(
         True,
-        ast.Constant(value=True, kind=None) if unified_constants else ast.NameConstant(value=True))
+        ast.Constant(value=True, kind=None) if unified_constants else ast.NameConstant(value=True),
+    )
     check_reify(
         False,
-        ast.Constant(value=False, kind=None) if unified_constants else ast.NameConstant(value=False))
+        ast.Constant(value=False, kind=None)
+        if unified_constants
+        else ast.NameConstant(value=False),
+    )
     check_reify(
         None,
-        ast.Constant(value=None, kind=None) if unified_constants else ast.NameConstant(value=None))
+        ast.Constant(value=None, kind=None) if unified_constants else ast.NameConstant(value=None),
+    )
 
-    class Dummy(): pass
+    class Dummy:
+        pass
+
     x = Dummy()
     check_reify(
-        x, ast.Name(id='__peval_temp_1', ctx=ast.Load()),
-        expected_binding=dict(__peval_temp_1=x))
+        x,
+        ast.Name(id="__peval_temp_1", ctx=ast.Load()),
+        expected_binding=dict(__peval_temp_1=x),
+    )
     check_reify(
-        x, ast.Name(id='y', ctx=ast.Load()),
-        preferred_name='y', expected_binding=dict(y=x))
+        x,
+        ast.Name(id="y", ctx=ast.Load()),
+        preferred_name="y",
+        expected_binding=dict(y=x),
+    )
 
     check_reify(1, ast.Constant(value=1, kind=None) if unified_constants else ast.Num(n=1))
     check_reify(2.3, ast.Constant(value=2.3, kind=None) if unified_constants else ast.Num(n=2.3))
-    check_reify(3+4j, ast.Constant(value=3+4j, kind=None) if unified_constants else ast.Num(n=3+4j))
-    check_reify('abc', ast.Constant(value='abc', kind=None) if unified_constants else ast.Str(s='abc'))
+    check_reify(
+        3 + 4j,
+        ast.Constant(value=3 + 4j, kind=None) if unified_constants else ast.Num(n=3 + 4j),
+    )
+    check_reify(
+        "abc",
+        ast.Constant(value="abc", kind=None) if unified_constants else ast.Str(s="abc"),
+    )
 
-    s = bytes('abc', encoding='ascii')
+    s = bytes("abc", encoding="ascii")
     check_reify(s, ast.Constant(value=s, kind=None) if unified_constants else ast.Bytes(s=s))
 
 
 def test_reify_unwrapped():
-    class Dummy(): pass
+    class Dummy:
+        pass
+
     x = Dummy()
     gen_sym = GenSym()
     node, gen_sym, binding = reify_unwrapped(x, gen_sym)
-    assert_ast_equal(node, ast.Name(id='__peval_temp_1', ctx=ast.Load()))
+    assert_ast_equal(node, ast.Name(id="__peval_temp_1", ctx=ast.Load()))
     assert binding == dict(__peval_temp_1=x)
 
 
 def test_str_repr():
-    kv = KnownValue(1, preferred_name='x')
+    kv = KnownValue(1, preferred_name="x")
     s = str(kv)
     nkv = eval(repr(kv))
     assert nkv.value == kv.value

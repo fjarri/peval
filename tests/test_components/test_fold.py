@@ -21,7 +21,8 @@ def dummy(x):
 
 def test_fold():
     check_component(
-        fold, dummy,
+        fold,
+        dummy,
         expected_source="""
             def dummy(x):
                 a = 1
@@ -32,7 +33,8 @@ def test_fold():
                     b = 2
                     c = 4
                 return 1 + b + c + x
-            """)
+            """,
+    )
 
 
 def test_if_visit_only_true_branch():
@@ -47,7 +49,7 @@ def test_if_visit_only_true_branch():
 
     @pure
     def inc():
-        global_state['cnt'] += 1
+        global_state["cnt"] += 1
         return True
 
     def if_body():
@@ -61,24 +63,30 @@ def test_if_visit_only_true_branch():
             inc()
 
     check_component(
-        fold, if_body, additional_bindings=dict(a=False, inc=inc),
+        fold,
+        if_body,
+        additional_bindings=dict(a=False, inc=inc),
         expected_source="""
             def if_body():
                 if False:
                     inc()
-            """)
-    assert global_state['cnt'] == 0
+            """,
+    )
+    assert global_state["cnt"] == 0
 
     check_component(
-        fold, if_else, additional_bindings=dict(a=False, inc=inc),
+        fold,
+        if_else,
+        additional_bindings=dict(a=False, inc=inc),
         expected_source="""
             def if_else():
                 if False:
                     dec()
                 else:
                     inc()
-            """)
-    assert global_state['cnt'] == 1
+            """,
+    )
+    assert global_state["cnt"] == 1
 
 
 @pure
@@ -90,17 +98,21 @@ def test_variable_annotation():
     if sys.version_info < (3, 6):
         pytest.skip()
 
-    func_annotations = function_from_source("""
+    func_annotations = function_from_source(
+        """
         def func_annotations():
             x = int
             a: x
             x = float
             b: x
             c: int32()
-        """, globals_=dict(int32=int32)).eval()
+        """,
+        globals_=dict(int32=int32),
+    ).eval()
 
     check_component(
-        fold, func_annotations,
+        fold,
+        func_annotations,
         expected_source="""
             def func_annotations():
                 x = int
@@ -109,7 +121,5 @@ def test_variable_annotation():
                 b: __peval_temp_2
                 c: __peval_temp_3
             """,
-        expected_new_bindings=dict(
-            __peval_temp_1=int,
-            __peval_temp_2=float,
-            __peval_temp_3=int))
+        expected_new_bindings=dict(__peval_temp_1=int, __peval_temp_2=float, __peval_temp_3=int),
+    )

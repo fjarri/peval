@@ -8,7 +8,11 @@ import pytest
 from peval.core.gensym import GenSym
 from peval.tags import inline
 from peval.components.inline import (
-    inline_functions, _replace_returns, _wrap_in_loop, _build_parameter_assignments)
+    inline_functions,
+    _replace_returns,
+    _wrap_in_loop,
+    _build_parameter_assignments,
+)
 
 from tests.utils import check_component, unindent, assert_ast_equal
 
@@ -17,15 +21,13 @@ def _test_replace_returns(source, expected_source, expected_returns_ctr, expecte
 
     nodes = ast.parse(unindent(source)).body
 
-    return_var = 'return_var'
-    return_flag_var = 'return_flag'
+    return_var = "return_var"
+    return_flag_var = "return_flag"
 
-    expected_source = expected_source.format(
-        return_var=return_var, return_flag=return_flag_var)
+    expected_source = expected_source.format(return_var=return_var, return_flag=return_flag_var)
     expected_nodes = ast.parse(unindent(expected_source)).body
 
-    new_nodes, returns_ctr, returns_in_loops = _replace_returns(
-        nodes, return_var, return_flag_var)
+    new_nodes, returns_ctr, returns_in_loops = _replace_returns(nodes, return_var, return_flag_var)
 
     assert_ast_equal(new_nodes, expected_nodes)
     assert returns_ctr == expected_returns_ctr
@@ -33,7 +35,6 @@ def _test_replace_returns(source, expected_source, expected_returns_ctr, expecte
 
 
 class TestReplaceReturns:
-
     def test_single_return(self):
         _test_replace_returns(
             source="""
@@ -46,8 +47,8 @@ class TestReplaceReturns:
                 break
                 """,
             expected_returns_ctr=1,
-            expected_returns_in_loops=False)
-
+            expected_returns_in_loops=False,
+        )
 
     def test_several_returns(self):
         _test_replace_returns(
@@ -69,8 +70,8 @@ class TestReplaceReturns:
                 break
                 """,
             expected_returns_ctr=3,
-            expected_returns_in_loops=False)
-
+            expected_returns_in_loops=False,
+        )
 
     def test_returns_in_loops(self):
         _test_replace_returns(
@@ -120,8 +121,8 @@ class TestReplaceReturns:
                 break
                 """,
             expected_returns_ctr=5,
-            expected_returns_in_loops=True)
-
+            expected_returns_in_loops=True,
+        )
 
     def test_returns_in_loop_else(self):
         _test_replace_returns(
@@ -144,7 +145,8 @@ class TestReplaceReturns:
                 break
                 """,
             expected_returns_ctr=2,
-            expected_returns_in_loops=False)
+            expected_returns_in_loops=False,
+        )
 
 
 def _test_build_parameter_assignments(call_str, signature_str, expected_assignments):
@@ -160,7 +162,6 @@ def _test_build_parameter_assignments(call_str, signature_str, expected_assignme
 
 
 class TestBuildParameterAssignments:
-
     def test_positional_args(self):
         _test_build_parameter_assignments(
             "a, b, 1, 3",
@@ -170,7 +171,8 @@ class TestBuildParameterAssignments:
             d = b
             e = 1
             f = 3
-            """)
+            """,
+        )
 
 
 def _test_wrap_in_loop(body_src, expected_src, format_kwds={}, expected_bindings={}):
@@ -178,12 +180,13 @@ def _test_wrap_in_loop(body_src, expected_src, format_kwds={}, expected_bindings
 
     body_nodes = ast.parse(unindent(body_src)).body
 
-    return_name = '_return_val'
+    return_name = "_return_val"
 
     gen_sym, inlined_body, new_bindings = _wrap_in_loop(gen_sym, body_nodes, return_name)
 
-    expected_body = ast.parse(unindent(expected_src.format(
-        return_val=return_name, **format_kwds))).body
+    expected_body = ast.parse(
+        unindent(expected_src.format(return_val=return_name, **format_kwds))
+    ).body
 
     assert_ast_equal(inlined_body, expected_body)
 
@@ -191,7 +194,6 @@ def _test_wrap_in_loop(body_src, expected_src, format_kwds={}, expected_bindings
 
 
 class TestWrapInLoop:
-
     def test_no_return(self):
         _test_wrap_in_loop(
             """
@@ -202,7 +204,8 @@ class TestWrapInLoop:
             do_something()
             do_something_else()
             {return_val} = None
-            """)
+            """,
+        )
 
     def test_single_return(self):
         _test_wrap_in_loop(
@@ -215,8 +218,8 @@ class TestWrapInLoop:
             do_something()
             do_something_else()
             {return_val} = 1
-            """
-            )
+            """,
+        )
 
     def test_several_returns(self):
         _test_wrap_in_loop(
@@ -236,8 +239,8 @@ class TestWrapInLoop:
                 do_something_else()
                 {return_val} = 1
                 break
-            """)
-
+            """,
+        )
 
     def test_returns_in_loops(self):
         _test_wrap_in_loop(
@@ -264,12 +267,11 @@ class TestWrapInLoop:
                 {return_val} = 1
                 break
             """,
-            dict(return_flag='__peval_return_flag_1'))
-
+            dict(return_flag="__peval_return_flag_1"),
+        )
 
 
 def test_component():
-
     @inline
     def inlined(y):
         l = []
@@ -285,7 +287,8 @@ def test_component():
         return a
 
     check_component(
-        inline_functions, outer,
+        inline_functions,
+        outer,
         expected_source="""
             def outer(x):
                 a = x.foo()
@@ -298,5 +301,5 @@ def test_component():
                 __peval_return_1 = __peval_mangled_2
                 a = (b + __peval_return_1)
                 return a
-        """)
-
+        """,
+    )

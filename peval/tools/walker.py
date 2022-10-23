@@ -122,12 +122,13 @@ def ast_inspector(handler):
 
 
 # The AST node fields which contain lists of statements
-_BLOCK_FIELDS = ('body', 'orelse')
+_BLOCK_FIELDS = ("body", "orelse")
 
 
 class _Walker:
-
-    def __init__(self, handler: typing.Callable, inspect: bool=False, transform: bool=False) -> None:
+    def __init__(
+        self, handler: typing.Callable, inspect: bool = False, transform: bool = False
+    ) -> None:
 
         self._transform = transform
         self._inspect = inspect
@@ -141,20 +142,31 @@ class _Walker:
         # so for the sake of performance we're using specialized versions of them.
         if self._transform and self._inspect:
             self._walk_field_user = self._transform_inspect_field
+
             def default_handler(state, node, **_):
                 return state, node
+
         elif self._transform:
             self._walk_field_user = self._transform_field
+
             def default_handler(node, **_):
                 return node
+
         elif self._inspect:
             self._walk_field_user = self._inspect_field
+
             def default_handler(state, **_):
                 return state
 
         self._handler = Dispatcher(handler, default_handler=default_handler)
 
-    def _walk_list(self, state: typing.Optional[immutableadict], lst: typing.List[typing.Any], ctx: typing.Optional[immutableadict], block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.List[typing.Any]]:
+    def _walk_list(
+        self,
+        state: typing.Optional[immutableadict],
+        lst: typing.List[typing.Any],
+        ctx: typing.Optional[immutableadict],
+        block_context: bool = False,
+    ) -> typing.Tuple[typing.Optional[immutableadict], typing.List[typing.Any]]:
         """
         Traverses a list of AST nodes.
         If ``block_context`` is ``True``, the list contains statements
@@ -174,7 +186,7 @@ class _Walker:
             new_state, new_node = self._walk_node(new_state, node, ctx, list_context=True)
 
             if self._transform and block_context and len(self._current_block_stack[-1]) > 0:
-            # ``prepend()`` was called during ``_walk_node()``
+                # ``prepend()`` was called during ``_walk_node()``
                 transformed = True
                 new_lst.extend(self._current_block_stack[-1])
                 self._current_block_stack[-1] = []
@@ -196,15 +208,21 @@ class _Walker:
 
             if transformed:
                 if block_context and len(new_lst) == 0:
-                # If we're in the block context, we can't just return an empty list.
-                # Returning a single ``pass`` instead.
+                    # If we're in the block context, we can't just return an empty list.
+                    # Returning a single ``pass`` instead.
                     new_lst = [ast.Pass()]
         else:
             new_lst = lst
 
         return new_state, new_lst
 
-    def _walk_field(self, state: typing.Optional[immutableadict], value:  typing.Any, ctx: typing.Optional[immutableadict], block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
+    def _walk_field(
+        self,
+        state: typing.Optional[immutableadict],
+        value: typing.Any,
+        ctx: typing.Optional[immutableadict],
+        block_context: bool = False,
+    ) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
         """
         Traverses a single AST node field.
         """
@@ -223,7 +241,9 @@ class _Walker:
     # In these three functions `ctx` goes first because it makes it easier
     # to add it to the list of arguments later when `self._walk_field_user()` is called
 
-    def _transform_field(self, ctx: immutableadict, value: typing.Any, block_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
+    def _transform_field(
+        self, ctx: immutableadict, value: typing.Any, block_context: bool = False
+    ) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
         return self._walk_field(None, value, ctx, block_context=block_context)[1]
 
     def _inspect_field(self, ctx, state, value, block_context=False):
@@ -232,7 +252,12 @@ class _Walker:
     def _transform_inspect_field(self, ctx, state, value, block_context=False):
         return self._walk_field(state, value, ctx, block_context=block_context)
 
-    def _walk_fields(self, state: typing.Optional[immutableadict], node: typing.Optional[ast.AST], ctx: typing.Optional[immutableadict]) -> ast.AST:
+    def _walk_fields(
+        self,
+        state: typing.Optional[immutableadict],
+        node: typing.Optional[ast.AST],
+        ctx: typing.Optional[immutableadict],
+    ) -> ast.AST:
         """
         Traverses all fields of an AST node.
         """
@@ -248,7 +273,8 @@ class _Walker:
 
             block_context = field in _BLOCK_FIELDS and type(value) == list
             new_state, new_value = self._walk_field(
-                new_state, value, ctx, block_context=block_context)
+                new_state, value, ctx, block_context=block_context
+            )
 
             if self._transform:
                 new_fields[field] = new_value
@@ -260,16 +286,24 @@ class _Walker:
         else:
             return new_state, node
 
-    def _handle_node(self, state: typing.Optional[immutableadict], node: ast.AST, ctx: typing.Optional[immutableadict], list_context: bool=False, visiting_after: bool=False) -> typing.Any:
-
+    def _handle_node(
+        self,
+        state: typing.Optional[immutableadict],
+        node: ast.AST,
+        ctx: typing.Optional[immutableadict],
+        list_context: bool = False,
+        visiting_after: bool = False,
+    ) -> typing.Any:
         def prepend(nodes):
             self._current_block_stack[-1].extend(nodes)
 
         to_visit_after = [False]
+
         def visit_after():
             to_visit_after[0] = True
 
         to_skip_fields = [False]
+
         def skip_fields():
             to_skip_fields[0] = True
 
@@ -280,12 +314,15 @@ class _Walker:
             # this argument is only used by the Dispatcher;
             # the user-defined handler gets keyword arguments
             node,
-            state=state, node=node, ctx=ctx,
+            state=state,
+            node=node,
+            ctx=ctx,
             prepend=prepend,
             visit_after=None if visiting_after else visit_after,
             visiting_after=visiting_after,
             skip_fields=skip_fields,
-            walk_field=walk_field)
+            walk_field=walk_field,
+        )
 
         # depending on the walker type, we expect different returns from the user-defined handler
         if self._transform and self._inspect:
@@ -308,46 +345,68 @@ class _Walker:
                     "Expected callback return types in {context} are {expected}, got {got}".format(
                         context=("list context" if list_context else "field context"),
                         expected=expected_str,
-                        got=type(new_node)))
+                        got=type(new_node),
+                    )
+                )
 
         return new_state, new_node, to_visit_after[0], to_skip_fields[0]
 
-    def _walk_node(self, state: typing.Optional[immutableadict], node:  ast.AST, ctx: typing.Optional[immutableadict], list_context: bool=False) -> typing.Tuple[typing.Optional[immutableadict], ast.AST]:
+    def _walk_node(
+        self,
+        state: typing.Optional[immutableadict],
+        node: ast.AST,
+        ctx: typing.Optional[immutableadict],
+        list_context: bool = False,
+    ) -> typing.Tuple[typing.Optional[immutableadict], ast.AST]:
         """
         Traverses an AST node and its fields.
         """
 
         new_state, new_node, to_visit_after, to_skip_fields = self._handle_node(
-            state, node, ctx, list_context=list_context, visiting_after=False)
+            state, node, ctx, list_context=list_context, visiting_after=False
+        )
 
         if new_node is node and not to_skip_fields:
             new_state, new_node = self._walk_fields(new_state, new_node, ctx)
 
         if to_visit_after:
             new_state, new_node, _, _ = self._handle_node(
-                new_state, new_node, ctx, list_context=list_context, visiting_after=True)
+                new_state, new_node, ctx, list_context=list_context, visiting_after=True
+            )
 
         return new_state, new_node
 
-    def __call__(self, *args, ctx=None) -> typing.Union[typing.Optional[immutableadict], ast.AST, typing.Tuple[typing.Optional[immutableadict], ast.AST]]:
+    def __call__(
+        self, *args, ctx=None
+    ) -> typing.Union[
+        typing.Optional[immutableadict],
+        ast.AST,
+        typing.Tuple[typing.Optional[immutableadict], ast.AST],
+    ]:
 
         if self._transform and self._inspect:
             if len(args) != 2:
                 raise TypeError(
                     "A walker instance takes two positional arguments ({num} given)".format(
-                        num=len(args)))
+                        num=len(args)
+                    )
+                )
             state, node = args
         elif self._transform:
             if len(args) != 1:
                 raise TypeError(
                     "A transformer instance takes one positional argument ({num} given)".format(
-                        num=len(args)))
+                        num=len(args)
+                    )
+                )
             state, node = None, args[0]
         elif self._inspect:
             if len(args) != 2:
                 raise TypeError(
                     "An inspector instance takes two positional arguments ({num} given)".format(
-                        num=len(args)))
+                        num=len(args)
+                    )
+                )
             state, node = args
 
         if ctx is not None:

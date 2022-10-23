@@ -18,7 +18,7 @@ UNARY_OPS = {
     ast.USub: KnownValue(operator.neg),
     ast.Not: KnownValue(operator.not_),
     ast.Invert: KnownValue(operator.invert),
-    }
+}
 
 BIN_OPS = {
     ast.Add: KnownValue(operator.add),
@@ -33,18 +33,21 @@ BIN_OPS = {
     ast.BitOr: KnownValue(operator.or_),
     ast.BitXor: KnownValue(operator.xor),
     ast.BitAnd: KnownValue(operator.and_),
-    }
+}
 
 # Wrapping ``contains``, because its parameters
 # do not follow the pattern (left operand, right operand).
+
 
 @pure
 def in_(x, y):
     return operator.contains(y, x)
 
+
 @pure
 def not_in(x, y):
     return not operator.contains(y, x)
+
 
 COMPARE_OPS = {
     ast.Eq: KnownValue(operator.eq),
@@ -57,7 +60,7 @@ COMPARE_OPS = {
     ast.IsNot: KnownValue(operator.is_not),
     ast.In: KnownValue(in_),
     ast.NotIn: KnownValue(not_in),
-    }
+}
 
 
 def _reify_func(acc, value, create_binding):
@@ -72,7 +75,7 @@ def _reify_func(acc, value, create_binding):
         return acc, value
 
 
-def map_reify(state: immutableadict, container, create_binding: bool=False):
+def map_reify(state: immutableadict, container, create_binding: bool = False):
     acc = (state.gen_sym, immutabledict())
     acc, new_container = map_accum(_reify_func, acc, container, create_binding)
     gen_sym, bindings = acc
@@ -93,6 +96,7 @@ def map_get_value(container):
 
 def all_known_values(container):
     return fold_and(is_known_value, container)
+
 
 def all_known_values_or_none(container) -> bool:
     return fold_and(lambda val: (val is None or is_known_value(val)), container)
@@ -147,22 +151,22 @@ def peval_call(state, ctx, func, args=[], keywords=[]):
     keyword_expressions = [kw.value for kw in keywords]
 
     state, results = map_peval_expression(
-        state, dict(func=func, args=args, keywords=keyword_expressions), ctx)
+        state, dict(func=func, args=args, keywords=keyword_expressions), ctx
+    )
 
     if all_known_values_or_none(results):
         values = map_get_value(results)
-        kwds = {kw.arg: value for kw, value in zip(keywords, values['keywords'])}
-        success, value = try_eval_call(
-            values['func'], args=values['args'], keywords=kwds)
+        kwds = {kw.arg: value for kw, value in zip(keywords, values["keywords"])}
+        success, value = try_eval_call(values["func"], args=values["args"], keywords=kwds)
         if success:
             return state, KnownValue(value=value)
 
     state, nodes = map_reify(state, results)
 
     # restoring the keyword list
-    nodes['keywords'] = [
-        ast.keyword(arg=kw.arg, value=expr)
-        for kw, expr in zip(keywords, nodes['keywords'])]
+    nodes["keywords"] = [
+        ast.keyword(arg=kw.arg, value=expr) for kw, expr in zip(keywords, nodes["keywords"])
+    ]
 
     return state, ast.Call(**nodes)
 
@@ -184,11 +188,9 @@ def peval_boolop(state: immutableadict, ctx: immutableadict, op, values):
         # Short circuit
         if is_known_value(new_value):
             success, bool_value = try_call(bool, args=(new_value.value,))
-            short_circuit_applicable = (
-                success
-                and (
-                    (type(op) == ast.And and not bool_value)
-                    or (type(op) == ast.Or and bool_value)))
+            short_circuit_applicable = success and (
+                (type(op) == ast.And and not bool_value) or (type(op) == ast.Or and bool_value)
+            )
             if short_circuit_applicable:
                 return state, new_value
             # Just skip it, it won't change the BoolOp result.
@@ -252,13 +254,16 @@ def peval_compare(state: immutableadict, ctx: immutableadict, node: ast.Compare)
     nodes = [result.values[0]]
     for value in result.values[1:]:
         last_node = nodes[-1]
-        if (type(last_node) == ast.Compare
-                and type(value) == ast.Compare
-                and ast_equal(last_node.comparators[-1], value.left)):
+        if (
+            type(last_node) == ast.Compare
+            and type(value) == ast.Compare
+            and ast_equal(last_node.comparators[-1], value.left)
+        ):
             nodes[-1] = ast.Compare(
                 left=last_node.left,
                 ops=last_node.ops + value.ops,
-                comparators=last_node.comparators + value.comparators)
+                comparators=last_node.comparators + value.comparators,
+            )
         else:
             nodes.append(value)
 
@@ -273,7 +278,6 @@ class CannotEvaluateComprehension(Exception):
 
 
 class ListAccumulator:
-
     def __init__(self):
         self.accum = []
 
@@ -288,7 +292,6 @@ class ListAccumulator:
 
 
 class SetAccumulator:
-
     def __init__(self):
         self.accum = set()
 
@@ -303,7 +306,6 @@ class SetAccumulator:
 
 
 class DictAccumulator:
-
     def __init__(self):
         self.accum = {}
 
@@ -370,7 +372,8 @@ def peval_comprehension(state, node, ctx):
 
     try:
         state, container = _peval_comprehension(
-            state, accum_cls[type(node)], new_elt, node.generators, ctx)
+            state, accum_cls[type(node)], new_elt, node.generators, ctx
+        )
         evaluated = True
     except CannotEvaluateComprehension:
         evaluated = False
@@ -426,7 +429,7 @@ def _peval_comprehension_generators(state, generators, ctx):
     state, iter_result = _peval_expression(state, generator.iter, ctx)
 
     masked_bindings = _get_masked_bindings(generator.target, ctx.bindings)
-    masked_ctx = ctx.set('bindings', masked_bindings)
+    masked_ctx = ctx.set("bindings", masked_bindings)
 
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
@@ -436,7 +439,8 @@ def _peval_comprehension_generators(state, generators, ctx):
             ifs_result = []
 
     state, new_generator_kwds = map_reify(
-        state, dict(target=generator.target, iter=iter_result, ifs=ifs_result))
+        state, dict(target=generator.target, iter=iter_result, ifs=ifs_result)
+    )
     new_generator = ast.comprehension(**new_generator_kwds)
 
     state, new_generators = _peval_comprehension_generators(state, next_generators, ctx)
@@ -485,7 +489,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
     state, iter_result = _peval_expression(state, generator.iter, ctx)
 
     masked_bindings = _get_masked_bindings(generator.target, ctx.bindings)
-    masked_ctx = ctx.set('bindings', masked_bindings)
+    masked_ctx = ctx.set("bindings", masked_bindings)
 
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
@@ -508,7 +512,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 
         iter_bindings = dict(ctx.bindings)
         iter_bindings.update(target_bindings)
-        iter_ctx = ctx.set('bindings', iter_bindings)
+        iter_ctx = ctx.set("bindings", iter_bindings)
 
         state, ifs_value = _peval_expression(state, ifs_result, iter_ctx)
         if not is_known_value(ifs_value):
@@ -534,14 +538,15 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 
 @Dispatcher
 class _peval_expression_dispatcher:
-
     @staticmethod
     def handle(state: peval.tools.immutable.immutabledict, node: ast.AST, _: immutableadict):
         # Pass through in case of type(node) == KnownValue
         return state, node
 
     @staticmethod
-    def handle_Name(state: peval.tools.immutable.immutabledict, node: ast.Name, ctx: immutableadict):
+    def handle_Name(
+        state: peval.tools.immutable.immutabledict, node: ast.Name, ctx: immutableadict
+    ):
         name = node.id
         if name in ctx.bindings:
             return state, KnownValue(ctx.bindings[name], preferred_name=name)
@@ -557,40 +562,65 @@ class _peval_expression_dispatcher:
         return state, KnownValue(node.s)
 
     @staticmethod
-    def handle_Bytes(state: peval.tools.immutable.immutabledict, node: ast.Bytes, _: immutableadict):
+    def handle_Bytes(
+        state: peval.tools.immutable.immutabledict, node: ast.Bytes, _: immutableadict
+    ):
         return state, KnownValue(node.s)
 
     @staticmethod
-    def handle_NameConstant(state: peval.tools.immutable.immutabledict, node: ast.NameConstant, _: immutableadict):
+    def handle_NameConstant(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.NameConstant,
+        _: immutableadict,
+    ):
         return state, KnownValue(node.value)
 
     @staticmethod
-    def handle_Constant(state: peval.tools.immutable.immutabledict, node: ast.Constant, _: immutableadict):
+    def handle_Constant(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.Constant,
+        _: immutableadict,
+    ):
         return state, KnownValue(node.value)
 
     @staticmethod
-    def handle_BoolOp(state: peval.tools.immutable.immutabledict, node: ast.BoolOp, ctx: immutableadict):
+    def handle_BoolOp(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.BoolOp,
+        ctx: immutableadict,
+    ):
         return peval_boolop(state, ctx, node.op, node.values)
 
     @staticmethod
-    def handle_BinOp(state: peval.tools.immutable.immutabledict, node: ast.BinOp, ctx: immutableadict):
+    def handle_BinOp(
+        state: peval.tools.immutable.immutabledict, node: ast.BinOp, ctx: immutableadict
+    ):
         return peval_binop(state, ctx, node.op, node.left, node.right)
 
     @staticmethod
-    def handle_UnaryOp(state: peval.tools.immutable.immutabledict, node: ast.UnaryOp, ctx: immutableadict):
-        state, result = peval_call(
-            state, ctx, UNARY_OPS[type(node.op)], args=[node.operand])
+    def handle_UnaryOp(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.UnaryOp,
+        ctx: immutableadict,
+    ):
+        state, result = peval_call(state, ctx, UNARY_OPS[type(node.op)], args=[node.operand])
         if not is_known_value(result):
             state = state.update(temp_bindings=state.temp_bindings.del_(result.func.id))
             result = ast.UnaryOp(op=node.op, operand=result.args[0])
         return state, result
 
     @staticmethod
-    def handle_Lambda(state: peval.tools.immutable.immutabledict, node: ast.Lambda, ctx: immutableadict):
+    def handle_Lambda(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.Lambda,
+        ctx: immutableadict,
+    ):
         raise NotImplementedError
 
     @staticmethod
-    def handle_IfExp(state: peval.tools.immutable.immutabledict, node: ast.IfExp, ctx: immutableadict):
+    def handle_IfExp(
+        state: peval.tools.immutable.immutabledict, node: ast.IfExp, ctx: immutableadict
+    ):
         state, test_value = _peval_expression(state, node.test, ctx)
         if is_known_value(test_value):
             success, bool_value = try_call(bool, args=(test_value.value,))
@@ -604,10 +634,13 @@ class _peval_expression_dispatcher:
         state, new_body_node = map_reify(state, new_body)
         state, new_orelse_node = map_reify(state, new_orelse)
         return state, replace_fields(
-            node, test=test_value, body=new_body_node, orelse=new_orelse_node)
+            node, test=test_value, body=new_body_node, orelse=new_orelse_node
+        )
 
     @staticmethod
-    def handle_Dict(state: peval.tools.immutable.immutabledict, node: ast.Dict, ctx: immutableadict):
+    def handle_Dict(
+        state: peval.tools.immutable.immutabledict, node: ast.Dict, ctx: immutableadict
+    ):
 
         state, pairs = map_peval_expression(state, zip(node.keys, node.values), ctx)
         can_eval = all_known_values(pairs)
@@ -621,7 +654,9 @@ class _peval_expression_dispatcher:
             return state, new_node
 
     @staticmethod
-    def handle_List(state: peval.tools.immutable.immutabledict, node: ast.List, ctx: immutableadict):
+    def handle_List(
+        state: peval.tools.immutable.immutabledict, node: ast.List, ctx: immutableadict
+    ):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -634,7 +669,9 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_Tuple(state: peval.tools.immutable.immutabledict, node: ast.Tuple, ctx: immutableadict):
+    def handle_Tuple(
+        state: peval.tools.immutable.immutabledict, node: ast.Tuple, ctx: immutableadict
+    ):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -660,23 +697,41 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_ListComp(state: peval.tools.immutable.immutabledict, node: ast.ListComp, ctx: immutableadict):
+    def handle_ListComp(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.ListComp,
+        ctx: immutableadict,
+    ):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_SetComp(state: peval.tools.immutable.immutabledict, node: ast.SetComp, ctx: immutableadict):
+    def handle_SetComp(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.SetComp,
+        ctx: immutableadict,
+    ):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_DictComp(state: peval.tools.immutable.immutabledict, node: ast.DictComp, ctx: immutableadict):
+    def handle_DictComp(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.DictComp,
+        ctx: immutableadict,
+    ):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_GeneratorExp(state: peval.tools.immutable.immutabledict, node: ast.GeneratorExp, ctx: immutableadict):
+    def handle_GeneratorExp(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.GeneratorExp,
+        ctx: immutableadict,
+    ):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_Yield(state: peval.tools.immutable.immutabledict, node: ast.Yield, ctx: immutableadict):
+    def handle_Yield(
+        state: peval.tools.immutable.immutabledict, node: ast.Yield, ctx: immutableadict
+    ):
         state, result = _peval_expression(state, node.value, ctx)
 
         # We cannot evaluate a yield expression,
@@ -685,7 +740,11 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value)
 
     @staticmethod
-    def handle_YieldFrom(state: peval.tools.immutable.immutabledict, node: ast.YieldFrom, ctx: immutableadict):
+    def handle_YieldFrom(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.YieldFrom,
+        ctx: immutableadict,
+    ):
         state, result = _peval_expression(state, node.value, ctx)
 
         # We cannot evaluate a yield expression,
@@ -694,15 +753,25 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value)
 
     @staticmethod
-    def handle_Compare(state: peval.tools.immutable.immutabledict, node: ast.Compare, ctx: immutableadict):
+    def handle_Compare(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.Compare,
+        ctx: immutableadict,
+    ):
         return peval_compare(state, ctx, node)
 
     @staticmethod
-    def handle_Call(state: peval.tools.immutable.immutabledict, node: ast.Call, ctx: immutableadict):
+    def handle_Call(
+        state: peval.tools.immutable.immutabledict, node: ast.Call, ctx: immutableadict
+    ):
         return peval_call(state, ctx, node.func, args=node.args, keywords=node.keywords)
 
     @staticmethod
-    def handle_Attribute(state: peval.tools.immutable.immutabledict, node: ast.Attribute, ctx: immutableadict):
+    def handle_Attribute(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.Attribute,
+        ctx: immutableadict,
+    ):
         state, result = _peval_expression(state, node.value, ctx)
         if is_known_value(result):
             success, attr = try_get_attribute(result.value, node.attr)
@@ -713,12 +782,17 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value)
 
     @staticmethod
-    def handle_Subscript(state: peval.tools.immutable.immutabledict, node: ast.Subscript, ctx: immutableadict):
+    def handle_Subscript(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.Subscript,
+        ctx: immutableadict,
+    ):
         state, value_result = _peval_expression(state, node.value, ctx)
         state, slice_result = _peval_expression(state, node.slice, ctx)
         if is_known_value(value_result) and is_known_value(slice_result):
             success, elem = try_call_method(
-                value_result.value, '__getitem__', args=(slice_result.value,))
+                value_result.value, "__getitem__", args=(slice_result.value,)
+            )
             if success:
                 return state, KnownValue(value=elem)
 
@@ -729,7 +803,9 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value, slice=new_slice)
 
     @staticmethod
-    def handle_Index(state: peval.tools.immutable.immutabledict, node: ast.Index, ctx: immutableadict):
+    def handle_Index(
+        state: peval.tools.immutable.immutabledict, node: ast.Index, ctx: immutableadict
+    ):
         state, result = _peval_expression(state, node.value, ctx)
         if is_known_value(result):
             return state, KnownValue(value=result.value)
@@ -737,7 +813,9 @@ class _peval_expression_dispatcher:
             return state, result
 
     @staticmethod
-    def handle_Slice(state: peval.tools.immutable.immutabledict, node: ast.Slice, ctx: immutableadict):
+    def handle_Slice(
+        state: peval.tools.immutable.immutabledict, node: ast.Slice, ctx: immutableadict
+    ):
         state, results = map_peval_expression(state, (node.lower, node.upper, node.step), ctx)
         # how do we handle None values in nodes? Technically, they are known values
         if all_known_values_or_none(results):
@@ -748,7 +826,11 @@ class _peval_expression_dispatcher:
         return state, new_node
 
     @staticmethod
-    def handle_ExtSlice(state: peval.tools.immutable.immutabledict, node: ast.ExtSlice, ctx: immutableadict):
+    def handle_ExtSlice(
+        state: peval.tools.immutable.immutabledict,
+        node: ast.ExtSlice,
+        ctx: immutableadict,
+    ):
         state, results = map_peval_expression(state, node.dims, ctx)
         if all_known_values(results):
             return state, KnownValue(value=tuple(result.value for result in results))
@@ -757,8 +839,9 @@ class _peval_expression_dispatcher:
 
 
 class EvaluationResult:
-
-    def __init__(self, fully_evaluated: bool, node, temp_bindings: immutableadict, value=None) -> None:
+    def __init__(
+        self, fully_evaluated: bool, node, temp_bindings: immutableadict, value=None
+    ) -> None:
         self.fully_evaluated = fully_evaluated
         if fully_evaluated:
             self.value = value
@@ -770,7 +853,9 @@ def _peval_expression(state: immutableadict, node, ctx: immutableadict):
     return _peval_expression_dispatcher(node, state, node, ctx)
 
 
-def peval_expression(node, gen_sym: GenSym, bindings: ConstsDictT, create_binding: bool=False) -> typing.Tuple[EvaluationResult, GenSym]:
+def peval_expression(
+    node, gen_sym: GenSym, bindings: ConstsDictT, create_binding: bool = False
+) -> typing.Tuple[EvaluationResult, GenSym]:
 
     ctx = immutableadict(bindings=bindings)
     state = immutableadict(gen_sym=gen_sym, temp_bindings=immutableadict())
@@ -782,12 +867,12 @@ def peval_expression(node, gen_sym: GenSym, bindings: ConstsDictT, create_bindin
             fully_evaluated=True,
             value=result.value,
             node=result_node,
-            temp_bindings=state.temp_bindings)
+            temp_bindings=state.temp_bindings,
+        )
     else:
         eval_result = EvaluationResult(
-            fully_evaluated=False,
-            node=result,
-            temp_bindings=state.temp_bindings)
+            fully_evaluated=False, node=result, temp_bindings=state.temp_bindings
+        )
 
     return eval_result, state.gen_sym
 
@@ -806,4 +891,3 @@ def try_peval_expression(node, bindings):
         return True, eval_result.value
     else:
         return False, node
-

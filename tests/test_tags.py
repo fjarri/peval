@@ -6,7 +6,6 @@ from tests.utils import function_from_source
 
 
 def test_pure_tag():
-
     @pure
     def func(x):
         return x
@@ -15,7 +14,6 @@ def test_pure_tag():
 
 
 def test_inline_tag():
-
     @inline
     def func(x):
         return x
@@ -24,7 +22,6 @@ def test_inline_tag():
 
 
 def test_inline_prohibit_nested_definitions():
-
     def func(x):
         return lambda y: x + y
 
@@ -33,7 +30,6 @@ def test_inline_prohibit_nested_definitions():
 
 
 def test_inline_prohibit_generator():
-
     def func(x):
         for i in range(x):
             yield i
@@ -44,17 +40,18 @@ def test_inline_prohibit_generator():
 
 def test_inline_prohibit_async():
 
-    func = function_from_source("""
+    func = function_from_source(
+        """
         async def func(x):
             return x
-        """).eval()
+        """
+    ).eval()
 
     with pytest.raises(ValueError):
         func = inline(func)
 
 
 def test_inline_prohibit_closure():
-
     @inline
     def no_closure(x):
         return x

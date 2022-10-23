@@ -44,3 +44,7 @@ include = [
 namespaces = false
 
 [tool.setuptools_scm]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']

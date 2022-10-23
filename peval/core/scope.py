@@ -4,12 +4,11 @@ from collections import namedtuple
 from peval.tools import immutableset, ast_inspector
 
 
-Scope = namedtuple('Scope', 'locals locals_used globals')
+Scope = namedtuple("Scope", "locals locals_used globals")
 
 
 @ast_inspector
 class _analyze_scope:
-
     @staticmethod
     def handle_arg(state, node: ast.AST, **_):
         return state.update(locals=state.locals.add(node.arg))
@@ -32,13 +31,14 @@ class _analyze_scope:
     @staticmethod
     def handle_alias(state, node: ast.AST, **_):
         name = node.asname if node.asname else node.name
-        if '.' in name:
-            name = name.split('.', 1)[0]
+        if "." in name:
+            name = name.split(".", 1)[0]
         return state.update(locals=state.locals.add(name))
 
 
 def analyze_scope(node: ast.AST) -> Scope:
     state = _analyze_scope(
         dict(locals=immutableset(), locals_used=immutableset(), globals=immutableset()),
-        node)
+        node,
+    )
     return Scope(locals=state.locals, locals_used=state.locals_used, globals=state.globals)

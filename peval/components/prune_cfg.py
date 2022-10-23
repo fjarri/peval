@@ -6,13 +6,18 @@ from peval.core.expression import try_peval_expression
 from peval.tools import ast_equal
 from peval.typing import ConstsDictT, PassOutputT
 
+
 def prune_cfg(node: ast.AST, bindings: ConstsDictT) -> PassOutputT:
 
     while True:
 
         new_node = node
 
-        for func in (remove_unreachable_statements, simplify_loops, remove_unreachable_branches):
+        for func in (
+            remove_unreachable_statements,
+            simplify_loops,
+            remove_unreachable_branches,
+        ):
             new_node = func(new_node, ctx=dict(bindings=bindings))
 
         if ast_equal(new_node, node):
@@ -25,7 +30,7 @@ def prune_cfg(node: ast.AST, bindings: ConstsDictT) -> PassOutputT:
 
 @ast_transformer
 def remove_unreachable_statements(node, walk_field, **kwds):
-    for attr in ('body', 'orelse'):
+    for attr in ("body", "orelse"):
         if hasattr(node, attr):
             old_list = getattr(node, attr)
             not_list = isinstance(old_list, ast.AST)
@@ -64,7 +69,6 @@ def filter_block(node_list: typing.List[ast.AST]) -> typing.List[ast.AST]:
 
 @ast_inspector
 class _find_jumps:
-
     @staticmethod
     def handle_FunctionDef(skip_fields, **_):
         skip_fields()
@@ -92,7 +96,6 @@ def find_jumps(node: typing.List[ast.AST]) -> int:
 
 @ast_transformer
 class simplify_loops:
-
     @staticmethod
     def handle_While(node, **_):
         last_node = node.body[-1]
@@ -109,7 +112,6 @@ class simplify_loops:
 
 @ast_transformer
 class remove_unreachable_branches:
-
     @staticmethod
     def handle_If(node, ctx, walk_field, **_):
         evaluated, test = try_peval_expression(node.test, ctx.bindings)

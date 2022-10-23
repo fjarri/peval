@@ -24,7 +24,8 @@ class Callable:
         return (
             self.func_obj is other.func_obj
             and self.self_obj is other.self_obj
-            and self.init == other.init)
+            and self.init == other.init
+        )
 
 
 def inspect_callable(obj: typing.Callable) -> Callable:
@@ -39,14 +40,12 @@ def inspect_callable(obj: typing.Callable) -> Callable:
         return Callable(obj.__func__, self_obj=obj.__self__)
 
     if type(obj) == MethodWrapperType:
-        return Callable(
-            getattr(obj.__objclass__, obj.__name__),
-            self_obj=obj.__self__)
+        return Callable(getattr(obj.__objclass__, obj.__name__), self_obj=obj.__self__)
 
     if type(obj) == WrapperDescriptorType:
         return Callable(obj)
 
-    if hasattr(obj, '__call__'):
+    if hasattr(obj, "__call__"):
         return inspect_callable(obj.__call__)
 
     raise AttributeError

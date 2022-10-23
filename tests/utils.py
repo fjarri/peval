@@ -28,12 +28,12 @@ def print_diff(test, expected):
     print("\n" + "=" * 40 + " result:\n\n" + test)
     print("\n")
 
-    expected_lines = expected.split('\n')
-    test_lines = test.split('\n')
+    expected_lines = expected.split("\n")
+    test_lines = test.split("\n")
 
     for line in difflib.unified_diff(
-            expected_lines, test_lines,
-            fromfile='expected', tofile='test'):
+        expected_lines, test_lines, fromfile="expected", tofile="test"
+    ):
         print(line)
 
 
@@ -58,8 +58,13 @@ def assert_ast_equal(test_ast, expected_ast, print_ast=True):
     assert equal
 
 
-def check_component(component, func, additional_bindings=None,
-        expected_source=None, expected_new_bindings=None):
+def check_component(
+    component,
+    func,
+    additional_bindings=None,
+    expected_source=None,
+    expected_new_bindings=None,
+):
 
     function = Function.from_object(func)
     bindings = function.get_external_variables()
@@ -78,7 +83,7 @@ def check_component(component, func, additional_bindings=None,
     if expected_new_bindings is not None:
         for k in expected_new_bindings:
             if k not in new_bindings:
-                print('Expected binding missing:', k)
+                print("Expected binding missing:", k)
 
             binding = new_bindings[k]
             expected_binding = expected_new_bindings[k]
@@ -105,7 +110,7 @@ def function_from_source(source, globals_=None):
     else:
         raise ValueError("No function definitions found in the provided source")
 
-    code_object = compile(module, '<nofile>', 'exec', dont_inherit=True)
+    code_object = compile(module, "<nofile>", "exec", dont_inherit=True)
     locals_ = {}
     eval(code_object, globals_, locals_)
 

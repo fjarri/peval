@@ -11,8 +11,7 @@ from peval.typing import ConstsDictT, PassOutputT
 
 
 class Value:
-
-    def __init__(self, value: typing.Optional[typing.Any]=None, undefined: bool=False) -> None:
+    def __init__(self, value: typing.Optional[typing.Any] = None, undefined: bool = False) -> None:
         if undefined:
             self.defined = False
             self.value = None
@@ -51,7 +50,7 @@ def meet_values(val1: Value, val2: Value) -> Value:
 
     eq = False
     try:
-        eq = (v1 == v2)
+        eq = v1 == v2
     except Exception:
         pass
 
@@ -62,7 +61,6 @@ def meet_values(val1: Value, val2: Value) -> Value:
 
 
 class Environment:
-
     def __init__(self, values: typing.Dict[str, Value]) -> None:
         self.values = values if values is not None else {}
 
@@ -111,7 +109,6 @@ def my_reduce(func: typing.Callable, seq: typing.Iterable[Environment]) -> Envir
 
 
 class CachedExpression:
-
     def __init__(self, path: typing.List[str], node: ast.expr) -> None:
         self.node = node
         self.path = path
@@ -119,7 +116,10 @@ class CachedExpression:
 
 TempBindingsT = typing.Mapping[str, typing.Any]
 
-def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) -> typing.Tuple[GenSym, Environment, typing.List[CachedExpression], TempBindingsT]:
+
+def forward_transfer(
+    gen_sym: GenSym, in_env: Environment, statement: ast.stmt
+) -> typing.Tuple[GenSym, Environment, typing.List[CachedExpression], TempBindingsT]:
 
     if isinstance(statement, (ast.Assign, ast.AnnAssign)):
         if isinstance(statement, ast.AnnAssign):
@@ -131,7 +131,10 @@ def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) 
         if isinstance(target, ast.Name):
             target = target.id
         elif isinstance(target, (ast.Name, ast.Tuple)):
-            raise ValueError("Destructuring assignment (should have been eliminated by other pass)", target)
+            raise ValueError(
+                "Destructuring assignment (should have been eliminated by other pass)",
+                target,
+            )
         else:
             raise ValueError("Incorrect assignment target", target)
 
@@ -146,7 +149,7 @@ def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) 
         new_values[target] = new_value
 
         out_env = Environment(values=new_values)
-        new_exprs = [CachedExpression(path=['value'], node=result.node)]
+        new_exprs = [CachedExpression(path=["value"], node=result.node)]
 
         return gen_sym, out_env, new_exprs, result.temp_bindings
 
@@ -155,7 +158,7 @@ def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) 
 
         new_values = dict(in_env.values)
 
-        new_exprs = [CachedExpression(path=['value'], node=result.node)]
+        new_exprs = [CachedExpression(path=["value"], node=result.node)]
         out_env = Environment(values=new_values)
 
         return gen_sym, out_env, new_exprs, result.temp_bindings
@@ -167,7 +170,7 @@ def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) 
 
         out_env = Environment(values=new_values)
 
-        new_exprs = [CachedExpression(path=['test'], node=result.node)]
+        new_exprs = [CachedExpression(path=["test"], node=result.node)]
 
         return gen_sym, out_env, new_exprs, result.temp_bindings
 
@@ -176,8 +179,13 @@ def forward_transfer(gen_sym: GenSym, in_env: Environment, statement: ast.stmt) 
 
 
 class State:
-
-    def __init__(self, in_env: Environment, out_env: Environment, exprs:  typing.List[CachedExpression], temp_bindings: immutableadict) -> None:
+    def __init__(
+        self,
+        in_env: Environment,
+        out_env: Environment,
+        exprs: typing.List[CachedExpression],
+        temp_bindings: immutableadict,
+    ) -> None:
         self.in_env = in_env
         self.out_env = out_env
         self.exprs = exprs
@@ -202,11 +210,17 @@ def get_sorted_nodes(graph: Graph, enter: int) -> typing.List[int]:
     return sorted_nodes
 
 
-def maximal_fixed_point(gen_sym: GenSym, graph: Graph, enter: int, bindings: ConstsDictT) -> typing.Tuple[typing.List[CachedExpression], TempBindingsT]:
+def maximal_fixed_point(
+    gen_sym: GenSym, graph: Graph, enter: int, bindings: ConstsDictT
+) -> typing.Tuple[typing.List[CachedExpression], TempBindingsT]:
 
     states = dict(
-        (node_id, State(Environment.from_dict(bindings), Environment.from_dict(bindings), [], {}))
-        for node_id in graph.nodes)
+        (
+            node_id,
+            State(Environment.from_dict(bindings), Environment.from_dict(bindings), [], {}),
+        )
+        for node_id in graph.nodes
+    )
     enter_env = Environment.from_dict(bindings)
 
     # First make a pass over each basic block
@@ -227,8 +241,9 @@ def maximal_fixed_point(gen_sym: GenSym, graph: Graph, enter: int, bindings: Con
             new_in_env = my_reduce(meet_envs, parent_envs)
 
         # propagate information for this basic block
-        gen_sym, new_out_env, new_exprs, temp_bindings = \
-            forward_transfer(gen_sym, new_in_env, graph.nodes[node_id].ast_node)
+        gen_sym, new_out_env, new_exprs, temp_bindings = forward_transfer(
+            gen_sym, new_in_env, graph.nodes[node_id].ast_node
+        )
 
         # TODO: merge it with the code in the condition above to avoid repetition
         states[node_id].in_env = new_in_env
@@ -256,8 +271,12 @@ def maximal_fixed_point(gen_sym: GenSym, graph: Graph, enter: int, bindings: Con
         if isinstance(node, ast.AnnAssign):
             in_env = state.in_env
             annotation_result, gen_sym = peval_expression(
-                node.annotation, gen_sym, state.in_env.known_values(), create_binding=True)
-            exprs.append(CachedExpression(path=['annotation'], node=annotation_result.node))
+                node.annotation,
+                gen_sym,
+                state.in_env.known_values(),
+                create_binding=True,
+            )
+            exprs.append(CachedExpression(path=["annotation"], node=annotation_result.node))
             exprs_temp_bindings.update(annotation_result.temp_bindings)
 
         new_exprs[node_id] = exprs
@@ -266,13 +285,18 @@ def maximal_fixed_point(gen_sym: GenSym, graph: Graph, enter: int, bindings: Con
     return new_exprs, temp_bindings
 
 
-def replace_exprs(tree: ast.FunctionDef, new_exprs: typing.Dict[int, typing.List[CachedExpression]]) -> typing.Union[ast.FunctionDef, ast.Module]:
+def replace_exprs(
+    tree: ast.FunctionDef, new_exprs: typing.Dict[int, typing.List[CachedExpression]]
+) -> typing.Union[ast.FunctionDef, ast.Module]:
     return _replace_exprs(tree, ctx=dict(new_exprs=new_exprs))
 
 
 ReplaceByPathNodeT = typing.Union[ast.If, ast.Assign, ast.Expr, ast.Return]
 
-def replace_by_path(obj: ReplaceByPathNodeT, path: typing.Iterable[str], new_value: ast.expr) -> ReplaceByPathNodeT:
+
+def replace_by_path(
+    obj: ReplaceByPathNodeT, path: typing.Iterable[str], new_value: ast.expr
+) -> ReplaceByPathNodeT:
 
     ptr = path[0]
 
@@ -286,7 +310,7 @@ def replace_by_path(obj: ReplaceByPathNodeT, path: typing.Iterable[str], new_val
     if isinstance(ptr, str):
         return replace_fields(obj, **{ptr: new_value})
     elif isinstance(ptr, int):
-        return obj[:ptr] + [new_value] + obj[ptr+1:]
+        return obj[:ptr] + [new_value] + obj[ptr + 1 :]
 
 
 @ast_transformer

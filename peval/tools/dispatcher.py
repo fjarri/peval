@@ -37,12 +37,14 @@ class Dispatcher:
     a ``ValueError`` is thrown.
     """
 
-    def __init__(self, handler_obj: HandlerT, default_handler: typing.Optional[HandlerT]=None) -> None:
+    def __init__(
+        self, handler_obj: HandlerT, default_handler: typing.Optional[HandlerT] = None
+    ) -> None:
         if isinstance(handler_obj, types.FunctionType):
             self._handlers = {}
             self._default_handler = handler_obj
         else:
-            handler_prefix = 'handle'
+            handler_prefix = "handle"
             if hasattr(handler_obj, handler_prefix):
                 self._default_handler = getattr(handler_obj, handler_prefix)
             elif default_handler is not None:
@@ -51,10 +53,10 @@ class Dispatcher:
                 raise ValueError("Default handler was not provided")
 
             self._handlers = {}
-            attr_prefix = handler_prefix + '_'
+            attr_prefix = handler_prefix + "_"
             for attr in vars(handler_obj):
                 if attr.startswith(attr_prefix):
-                    typename = attr[len(attr_prefix):]
+                    typename = attr[len(attr_prefix) :]
                     if hasattr(ast, typename):
                         self._handlers[getattr(ast, typename)] = getattr(handler_obj, attr)
 

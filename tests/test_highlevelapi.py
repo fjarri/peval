@@ -28,8 +28,10 @@ def assert_func_equal_on(fn1, fn2, *args, **kwargs):
         e2 = _e2
     if e1 or e2:
         # reraise exception, if there is only one
-        if e1 is None: fn2(*args, **kwargs)
-        if e2 is None: fn1(*args, **kwargs)
+        if e1 is None:
+            fn2(*args, **kwargs)
+        if e2 is None:
+            fn1(*args, **kwargs)
         if type(e1) != type(e2):
             # assume that fn1 is more correct, so raise exception from fn2
             fn2(*args, **kwargs)
@@ -41,8 +43,9 @@ def assert_func_equal_on(fn1, fn2, *args, **kwargs):
         assert v1 == v2
 
 
-def check_partial_apply(func, args=None, kwds=None,
-        expected_source=None, expected_new_bindings=None):
+def check_partial_apply(
+    func, args=None, kwds=None, expected_source=None, expected_new_bindings=None
+):
     """
     Test that with given constants, optimized_ast transforms
     source to expected_source.
@@ -64,7 +67,7 @@ def check_partial_apply(func, args=None, kwds=None,
     if expected_new_bindings is not None:
         for k in expected_new_bindings:
             if k not in function.globals:
-                print('Expected binding missing:', k)
+                print("Expected binding missing:", k)
 
             binding = function.globals[k]
             expected_binding = expected_new_bindings[k]
@@ -81,12 +84,11 @@ def check_partial_fn(base_fn, get_partial_kwargs, get_kwargs):
     fn = partial_apply(base_fn, **get_partial_kwargs())
     partial_fn = functools.partial(base_fn, **get_partial_kwargs())
     # call two times to check for possible side-effects
-    assert_func_equal_on(partial_fn, fn, **get_kwargs()) # first
-    assert_func_equal_on(partial_fn, fn, **get_kwargs()) # second
+    assert_func_equal_on(partial_fn, fn, **get_kwargs())  # first
+    assert_func_equal_on(partial_fn, fn, **get_kwargs())  # second
 
 
 def test_args_handling():
-
     def args_kwargs(a, b, c=None):
         return 1.0 * a / b * (c or 3)
 
@@ -95,7 +97,6 @@ def test_args_handling():
 
 
 def test_kwargs_handling():
-
     def args_kwargs(a, b, c=None):
         return 1.0 * a / b * (c or 3)
 
@@ -103,11 +104,10 @@ def test_kwargs_handling():
     assert partial_apply(args_kwargs, 2, c=4)(6) == 2.0 / 6 * 4
 
 
-
 @inline
 def smart_power(n, x):
     if not isinstance(n, int) or n < 0:
-        raise ValueError('Base should be a positive integer')
+        raise ValueError("Base should be a positive integer")
     elif n == 0:
         return 1
     elif n % 2 == 0:
@@ -120,7 +120,7 @@ def smart_power(n, x):
 @inline
 def stupid_power(n, x):
     if not isinstance(n, int) or n < 0:
-        raise ValueError('Base should be a positive integer')
+        raise ValueError("Base should be a positive integer")
     else:
         if n == 0:
             return 1
@@ -133,22 +133,22 @@ def stupid_power(n, x):
 
 
 def test_if_on_stupid_power():
-    for n in ('foo', 0, 1, 2, 3):
+    for n in ("foo", 0, 1, 2, 3):
         for x in [0, 1, 0.01, 5e10]:
-            check_partial_fn(stupid_power, lambda: dict(n=n), lambda: {'x': x })
+            check_partial_fn(stupid_power, lambda: dict(n=n), lambda: {"x": x})
 
 
 def test_if_on_recursive_power():
-    for n in ('foo', 0, 1, 2, 3):
+    for n in ("foo", 0, 1, 2, 3):
         for x in [0, 1, 0.01, 5e10]:
-            check_partial_fn(smart_power, lambda: dict(n=n), lambda: {'x': x })
+            check_partial_fn(smart_power, lambda: dict(n=n), lambda: {"x": x})
 
 
 def for_specialize(a, b, c=4, d=5):
     return a + b + c + d
 
 
-@pytest.mark.parametrize('names', ['b', 'd', ('a', 'b'), ('b', 'c'), ('c', 'd')])
+@pytest.mark.parametrize("names", ["b", "d", ("a", "b"), ("b", "c"), ("c", "d")])
 def test_specialize_on(names):
     f = specialize_on(names)(for_specialize)
     assert f(1, 2) == for_specialize(1, 2)
@@ -158,7 +158,7 @@ def test_specialize_on(names):
 
 def test_specialize_on_missing_names():
     with pytest.raises(ValueError):
-        f = specialize_on('k')(for_specialize)
+        f = specialize_on("k")(for_specialize)
 
 
 def test_peval_closure():
@@ -175,7 +175,6 @@ def test_peval_closure():
 
 
 def test_peval_prohibit_nested_definitions():
-
     def f(x):
         g = lambda y: x + y
         return g(x)
@@ -186,10 +185,12 @@ def test_peval_prohibit_nested_definitions():
 
 def test_peval_prohibit_async():
 
-    f = function_from_source("""
+    f = function_from_source(
+        """
         async def f(x):
             return x
-        """).eval()
+        """
+    ).eval()
 
     with pytest.raises(ValueError):
         ff = partial_eval(f)

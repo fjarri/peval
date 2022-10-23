@@ -27,7 +27,9 @@ class remove_unused_assignments:
             return node
 
 
-def remove_simple_assignments(node: typing.Union[ast.FunctionDef, ast.Module]) -> typing.Union[ast.FunctionDef, ast.Module]:
+def remove_simple_assignments(
+    node: typing.Union[ast.FunctionDef, ast.Module]
+) -> typing.Union[ast.FunctionDef, ast.Module]:
     """
     Remove one assigment of the form `<variable> = <variable>` at a time,
     touching only the top level statements of the block.
@@ -42,7 +44,8 @@ def remove_simple_assignments(node: typing.Union[ast.FunctionDef, ast.Module]) -
             can_remove, dest_name, src_name = _can_remove_assignment(cur_node, remaining_nodes)
             if can_remove:
                 remaining_nodes = replace_name(
-                    remaining_nodes, ctx=dict(dest_name=dest_name, src_name=src_name))
+                    remaining_nodes, ctx=dict(dest_name=dest_name, src_name=src_name)
+                )
             else:
                 new_nodes.append(cur_node)
         else:
@@ -54,14 +57,19 @@ def remove_simple_assignments(node: typing.Union[ast.FunctionDef, ast.Module]) -
     return replace_fields(node, body=new_nodes)
 
 
-def _can_remove_assignment(assign_node: ast.Assign, node_list: typing.List[ast.AST]) -> typing.Union[typing.Tuple[bool, str, str], typing.Tuple[bool, None, None]]:
+def _can_remove_assignment(
+    assign_node: ast.Assign, node_list: typing.List[ast.AST]
+) -> typing.Union[typing.Tuple[bool, str, str], typing.Tuple[bool, None, None]]:
     """
     Can remove it if:
     * it is "simple"
     * result it not used in "Store" context elsewhere
     """
-    if (len(assign_node.targets) == 1 and type(assign_node.targets[0]) == ast.Name
-            and type(assign_node.value) == ast.Name):
+    if (
+        len(assign_node.targets) == 1
+        and type(assign_node.targets[0]) == ast.Name
+        and type(assign_node.value) == ast.Name
+    ):
         src_name = assign_node.value.id
         dest_name = assign_node.targets[0].id
         if dest_name not in analyze_scope(node_list).locals:

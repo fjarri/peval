@@ -51,7 +51,8 @@ def test_unindent_empty_line():
                 return (x + y)
             else:
                 return kw['zzz']
-        """)
+        """
+    )
 
     expected_src = (
         "def sample_fn(x, y, foo='bar', **kw):\n"
@@ -59,7 +60,8 @@ def test_unindent_empty_line():
         """    if (foo == 'bar'):
         return (x + y)
     else:
-        return kw['zzz']""")
+        return kw['zzz']"""
+    )
 
     assert unindent(src) == expected_src
 
@@ -113,13 +115,13 @@ def test_ast_equal():
 
 
 def test_replace_fields():
-    node = ast.Name(id='x', ctx=ast.Load())
+    node = ast.Name(id="x", ctx=ast.Load())
 
-    new_node = replace_fields(node, id='y')
+    new_node = replace_fields(node, id="y")
     assert new_node is not node
-    assert new_node.id == 'y' and type(new_node.ctx) == ast.Load
+    assert new_node.id == "y" and type(new_node.ctx) == ast.Load
 
-    new_node = replace_fields(node, id='x')
+    new_node = replace_fields(node, id="x")
     # no new object is created if the new value is the same as the old value
     assert new_node is node
-    assert new_node.id == 'x' and type(new_node.ctx) == ast.Load
+    assert new_node.id == "x" and type(new_node.ctx) == ast.Load

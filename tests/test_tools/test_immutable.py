@@ -5,6 +5,7 @@ from peval.tools import immutabledict, immutableadict, immutableset
 
 # Immutable dictionary
 
+
 def test_dict_clear():
     d = immutabledict(a=1)
     nd = d.clear()
@@ -21,7 +22,7 @@ def test_dict_copy():
 
 def test_dict_pop():
     d = immutabledict(a=1)
-    val, nd = d.pop('a')
+    val, nd = d.pop("a")
     assert nd == {}
     assert d == dict(a=1)
     assert val == 1
@@ -32,18 +33,18 @@ def test_dict_popitem():
     val, nd = d.popitem()
     assert nd == {}
     assert d == dict(a=1)
-    assert val == ('a', 1)
+    assert val == ("a", 1)
 
 
 def test_dict_setdefault():
     d = immutabledict(a=1)
-    val, nd = d.setdefault('a', 10)
+    val, nd = d.setdefault("a", 10)
     assert d == dict(a=1)
     assert nd is d
     assert val == 1
 
     d = immutabledict(a=1)
-    val, nd = d.setdefault('b', 10)
+    val, nd = d.setdefault("b", 10)
     assert nd == dict(a=1, b=10)
     assert d == dict(a=1)
     assert val == 10
@@ -52,16 +53,16 @@ def test_dict_setdefault():
 def test_del_syntax():
     d = immutabledict(a=1)
     with pytest.raises(AttributeError):
-        del d['a']
+        del d["a"]
 
 
 def test_del():
     d = immutabledict(a=1)
-    nd = d.del_('b')
+    nd = d.del_("b")
     assert nd is d
 
     d = immutabledict(a=1)
-    nd = d.del_('a')
+    nd = d.del_("a")
     assert nd == {}
     assert d == dict(a=1)
 
@@ -69,16 +70,16 @@ def test_del():
 def test_set_syntax():
     d = immutabledict(a=1)
     with pytest.raises(AttributeError):
-        d['b'] = 2
+        d["b"] = 2
 
 
 def test_set():
     d = immutabledict(a=1)
-    nd = d.set('a', 1)
+    nd = d.set("a", 1)
     assert nd is d
 
     d = immutabledict(a=1)
-    nd = d.set('b', 2)
+    nd = d.set("b", 2)
     assert nd == dict(a=1, b=2)
     assert d == dict(a=1)
 
@@ -89,7 +90,7 @@ def test_update():
     assert nd is d
 
     d = immutabledict(a=1)
-    nd = d.update(('b', 2))
+    nd = d.update(("b", 2))
     assert nd == dict(a=1, b=2)
     assert d == dict(a=1)
 
@@ -99,7 +100,7 @@ def test_update():
     assert d == dict(a=1)
 
     d = immutabledict(a=1)
-    nd = d.update(('b', 2), c=3)
+    nd = d.update(("b", 2), c=3)
     assert nd == dict(a=1, b=2, c=3)
     assert d == dict(a=1)
 
@@ -122,6 +123,7 @@ def test_dict_repr():
 
 # Immutable attribute dictionary
 
+
 def test_adict_getattr():
     d = immutableadict(a=1)
     assert d.a == 1
@@ -141,6 +143,7 @@ def test_adict_repr():
 
 
 # Immutable set
+
 
 def test_set_add():
     s = immutableset([1])

@@ -11,16 +11,13 @@ _KNOWN_SIGNATURES = {
     isinstance: inspect.signature(lambda obj, tp: None),
     getattr: inspect.signature(lambda obj, name, default=None: None),
     iter: inspect.signature(lambda obj: None),
-
     str.__getitem__: inspect.signature(lambda self, index: None),
     range: inspect.signature(lambda *args: None),
     repr: inspect.signature(lambda *obj: None),
-
     operator.pos: inspect.signature(lambda a: None),
     operator.neg: inspect.signature(lambda a: None),
     operator.not_: inspect.signature(lambda a: None),
     operator.invert: inspect.signature(lambda a: None),
-
     operator.add: inspect.signature(lambda a, b: None),
     operator.sub: inspect.signature(lambda a, b: None),
     operator.mul: inspect.signature(lambda a, b: None),
@@ -33,7 +30,6 @@ _KNOWN_SIGNATURES = {
     operator.or_: inspect.signature(lambda a, b: None),
     operator.xor: inspect.signature(lambda a, b: None),
     operator.and_: inspect.signature(lambda a, b: None),
-
     operator.eq: inspect.signature(lambda a, b: None),
     operator.ne: inspect.signature(lambda a, b: None),
     operator.lt: inspect.signature(lambda a, b: None),
@@ -46,10 +42,11 @@ _KNOWN_SIGNATURES = {
 
 
 _BUILTIN_CALLABLES = set(
-    getattr(builtins, name) for name in dir(builtins)
-    if callable(getattr(builtins, name)))
-_BUILTIN_PURE_CALLABLES = _BUILTIN_CALLABLES.difference([
-    delattr, setattr, eval, exec, input, print, next, open])
+    getattr(builtins, name) for name in dir(builtins) if callable(getattr(builtins, name))
+)
+_BUILTIN_PURE_CALLABLES = _BUILTIN_CALLABLES.difference(
+    [delattr, setattr, eval, exec, input, print, next, open]
+)
 
 
 def get_signature(func: typing.Callable) -> inspect.Signature:

@@ -17,20 +17,22 @@ else:
 
 
 class KnownValue(object):
-
-    def __init__(self, value: typing.Any, preferred_name: typing.Optional[str]=None) -> None:
+    def __init__(self, value: typing.Any, preferred_name: typing.Optional[str] = None) -> None:
         self.value = value
         self.preferred_name = preferred_name
 
     def __str__(self):
         return (
-            "<" + str(self.value)
+            "<"
+            + str(self.value)
             + (" (" + self.preferred_name + ")" if self.preferred_name is not None else "")
-            + ">")
+            + ">"
+        )
 
     def __repr__(self):
         return "KnownValue({value}, preferred_name={name})".format(
-            value=repr(self.value), name=repr(self.preferred_name))
+            value=repr(self.value), name=repr(self.preferred_name)
+        )
 
 
 def is_known_value(node_or_kvalue: typing.Any) -> bool:
@@ -39,7 +41,8 @@ def is_known_value(node_or_kvalue: typing.Any) -> bool:
 
 ReifyResT = typing.Tuple[ConstantOrNameNodeT, GenSym, typing.Dict[str, ConsantOrASTNodeT]]
 
-def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool=False) -> ReifyResT:
+
+def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool = False) -> ReifyResT:
 
     value = kvalue.value
 
@@ -65,7 +68,7 @@ def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool=False) -> Re
             return ast.Num(n=value), gen_sym, {}
     else:
         if kvalue.preferred_name is None or create_binding:
-            name, gen_sym = gen_sym('temp')
+            name, gen_sym = gen_sym("temp")
         else:
             name = kvalue.preferred_name
         return ast.Name(id=name, ctx=ast.Load()), gen_sym, {name: value}

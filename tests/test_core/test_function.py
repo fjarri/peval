@@ -25,21 +25,25 @@ def global_var_reader():
 
 def make_one_var_closure():
     closure_var = [1]
+
     def closure():
         a = global_var
         some_local_var = 3
         closure_var[0] += 1
         return closure_var[0]
+
     return closure
 
 
 def make_two_var_closure():
     closure_var1 = [1]
     closure_var2 = [2]
+
     def closure():
         some_local_var = closure_var1[0]
         closure_var2[0] += 1
         return closure_var2[0]
+
     return closure
 
 
@@ -59,10 +63,10 @@ def test_bind_partial_args():
     sig = inspect.signature(new_func)
 
     assert new_func(2, 3, 4) == (1, 2, 3, 4)
-    assert 'a' not in sig.parameters
-    assert 'b' in sig.parameters
-    assert 'c' in sig.parameters
-    assert 'd' in sig.parameters
+    assert "a" not in sig.parameters
+    assert "b" in sig.parameters
+    assert "c" in sig.parameters
+    assert "d" in sig.parameters
 
 
 def test_bind_partial_kwds():
@@ -73,10 +77,10 @@ def test_bind_partial_kwds():
     sig = inspect.signature(new_func)
 
     assert new_func(2, 3) == (1, 2, 3, 10)
-    assert 'a' not in sig.parameters
-    assert 'b' in sig.parameters
-    assert 'c' in sig.parameters
-    assert 'd' not in sig.parameters
+    assert "a" not in sig.parameters
+    assert "b" in sig.parameters
+    assert "c" in sig.parameters
+    assert "d" not in sig.parameters
 
 
 def test_bind_partial_varargs():
@@ -86,11 +90,11 @@ def test_bind_partial_varargs():
     new_func = func.bind_partial(1, 2, 3).eval()
     sig = inspect.signature(new_func)
 
-    assert new_func(d=10) == (1, 2, (3,), {'d': 10})
-    assert 'a' not in sig.parameters
-    assert 'b' not in sig.parameters
-    assert 'args' not in sig.parameters
-    assert 'kwds' in sig.parameters
+    assert new_func(d=10) == (1, 2, (3,), {"d": 10})
+    assert "a" not in sig.parameters
+    assert "b" not in sig.parameters
+    assert "args" not in sig.parameters
+    assert "kwds" in sig.parameters
 
 
 def test_bind_partial_varkwds():
@@ -100,27 +104,27 @@ def test_bind_partial_varkwds():
     new_func = func.bind_partial(1, 2, d=10).eval()
     sig = inspect.signature(new_func)
 
-    assert new_func(3, 4) == (1, 2, (3, 4), {'d': 10})
-    assert 'a' not in sig.parameters
-    assert 'b' not in sig.parameters
-    assert 'args' in sig.parameters
-    assert 'kwds' not in sig.parameters
+    assert new_func(3, 4) == (1, 2, (3, 4), {"d": 10})
+    assert "a" not in sig.parameters
+    assert "b" not in sig.parameters
+    assert "args" in sig.parameters
+    assert "kwds" not in sig.parameters
 
 
 def test_globals_contents():
 
     func = Function.from_object(make_one_var_closure())
 
-    assert 'global_var' in func.globals
-    assert 'closure_var' not in func.globals
+    assert "global_var" in func.globals
+    assert "closure_var" not in func.globals
 
 
 def test_closure_contents():
 
     func = Function.from_object(make_one_var_closure())
 
-    assert 'global_var' not in func.closure_vals
-    assert 'closure_var' in func.closure_vals
+    assert "global_var" not in func.closure_vals
+    assert "closure_var" in func.closure_vals
 
 
 def test_copy_globals():
@@ -152,7 +156,6 @@ def test_restore_simple_closure():
 
 
 def test_restore_modified_closure():
-
     def remove_first_line(node):
         assert isinstance(node, ast.FunctionDef)
         node = copy.deepcopy(node)
@@ -182,6 +185,7 @@ def make_recursive():
             return recursive_inner(x - 1)
         else:
             return x
+
     return recursive_inner
 
 
@@ -216,19 +220,18 @@ def test_construct_from_eval():
 # The decorator must be in the global namespace
 # otherwise the current implementation of ``from_object()`` will fail
 def tag(f):
-    vars(f)['_tag'] = True
+    vars(f)["_tag"] = True
     return f
 
 
 def test_reapply_decorators():
-
     @tag
     def tagged(x):
         return x
 
     func = Function.from_object(tagged).eval()
 
-    assert '_tag' in vars(func) and vars(func)['_tag']
+    assert "_tag" in vars(func) and vars(func)["_tag"]
 
 
 def test_detect_future_features():
@@ -243,7 +246,6 @@ def test_detect_future_features():
 
     func = function_from_source(src)
     assert func.future_features.generator_stop
-
 
     # Test that the absence of a future feature is detected
 
@@ -306,7 +308,7 @@ def test_compile_ast():
     function = Function.from_object(sample_fn)
     compiled_fn = function.eval()
     assert compiled_fn(3, -9) == sample_fn(3, -9)
-    assert compiled_fn(3, -9, 'z', zzz=map) == sample_fn(3, -9, 'z', zzz=map)
+    assert compiled_fn(3, -9, "z", zzz=map) == sample_fn(3, -9, "z", zzz=map)
 
 
 def test_get_source():
@@ -320,28 +322,28 @@ def test_get_source():
                 return (x + y)
             else:
                 return kw['zzz']
-        """)
+        """
+    )
 
     assert source == expected_source
 
 
-def sample_fn(x, y, foo='bar', **kw):
-    if foo == 'bar':
+def sample_fn(x, y, foo="bar", **kw):
+    if foo == "bar":
         return x + y
     else:
-        return kw['zzz']
+        return kw["zzz"]
 
 
-def sample_fn2(x, y, foo='bar', **kw):
-    if foo == 'bar':
+def sample_fn2(x, y, foo="bar", **kw):
+    if foo == "bar":
         return x - y
     else:
-        return kw['zzz']
+        return kw["zzz"]
 
 
-def sample_fn3(x, y, foo='bar', **kwargs):
-    if foo == 'bar':
+def sample_fn3(x, y, foo="bar", **kwargs):
+    if foo == "bar":
         return x + y
     else:
-        return kwargs['zzz']
-
+        return kwargs["zzz"]

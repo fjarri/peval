@@ -16,7 +16,7 @@ def unindent(source: str) -> str:
         if len(line) > 0:
             if not line.startswith(indent):
                 raise ValueError("Inconsistent indent at line " + repr(line))
-            shifted_lines.append(line[len(indent):])
+            shifted_lines.append(line[len(indent) :])
         else:
             shifted_lines.append(line)
     return "\n".join(shifted_lines)
@@ -64,7 +64,9 @@ def ast_equal(node1: ast.AST, node2: ast.AST) -> bool:
     return True
 
 
-def map_accum(func: typing.Callable, acc: typing.Any, container: typing.Iterable, *args) -> typing.Tuple[typing.Any, typing.Iterable]:
+def map_accum(
+    func: typing.Callable, acc: typing.Any, container: typing.Iterable, *args
+) -> typing.Tuple[typing.Any, typing.Iterable]:
     if container is None:
         return acc, None
     elif type(container) in (list, tuple, zip):

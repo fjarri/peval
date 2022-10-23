@@ -11,7 +11,6 @@ from astunparse import dump
 
 @ast_walker
 class _peval_function_header:
-
     @staticmethod
     def handle_arg(state, node, ctx, **_):
         result, gen_sym = peval_expression(node.annotation, state.gen_sym, ctx.constants)
@@ -49,5 +48,6 @@ def peval_function_header(tree: ast.FunctionDef, constants: ConstsDictT) -> Pass
     state, new_tree = _peval_function_header(
         dict(new_bindings=immutabledict(), gen_sym=gen_sym),
         tree,
-        ctx=dict(constants=constants))
+        ctx=dict(constants=constants),
+    )
     return new_tree, state.new_bindings

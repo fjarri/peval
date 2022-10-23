@@ -10,7 +10,6 @@ class Node:
 
 
 class Graph:
-
     def __init__(self) -> None:
         self.nodes = {}
 
@@ -24,8 +23,8 @@ class Graph:
         assert src in self.nodes
         assert dest in self.nodes
 
-        #assert dest not in self.children_of(src)
-        #assert src not in self.parents_of(dest)
+        # assert dest not in self.children_of(src)
+        # assert src not in self.parents_of(dest)
 
         self.nodes[src].children.add(dest)
         self.nodes[dest].parents.add(src)
@@ -52,8 +51,13 @@ class Graph:
 
 
 class Jumps:
-
-    def __init__(self, returns: typing.Optional[typing.List[int]]=None, breaks: typing.Optional[typing.List[int]]=None, continues=None, raises=None) -> None:
+    def __init__(
+        self,
+        returns: typing.Optional[typing.List[int]] = None,
+        breaks: typing.Optional[typing.List[int]] = None,
+        continues=None,
+        raises=None,
+    ) -> None:
         self.returns = [] if returns is None else returns
         self.breaks = [] if breaks is None else breaks
         self.continues = [] if continues is None else continues
@@ -64,11 +68,18 @@ class Jumps:
             returns=self.returns + other.returns,
             breaks=self.breaks + other.breaks,
             continues=self.continues + other.continues,
-            raises=self.raises + other.raises)
+            raises=self.raises + other.raises,
+        )
 
 
 class ControlFlowSubgraph:
-    def __init__(self, graph: Graph, enter: int, exits: typing.Optional[typing.List[int]]=None, jumps: typing.Optional[Jumps]=None) -> None:
+    def __init__(
+        self,
+        graph: Graph,
+        enter: int,
+        exits: typing.Optional[typing.List[int]] = None,
+        jumps: typing.Optional[Jumps] = None,
+    ) -> None:
         self.graph = graph
         self.enter = enter
         self.exits = [] if exits is None else exits
@@ -76,7 +87,13 @@ class ControlFlowSubgraph:
 
 
 class ControlFlowGraph:
-    def __init__(self, graph: Graph, enter: int, exits: typing.Optional[typing.List[int]]=None, raises=None) -> None:
+    def __init__(
+        self,
+        graph: Graph,
+        enter: int,
+        exits: typing.Optional[typing.List[int]] = None,
+        raises=None,
+    ) -> None:
         self.graph = graph
         self.enter = enter
         self.exits = [] if exits is None else exits
@@ -182,7 +199,12 @@ def _build_excepthandler_cfg(node: ast.ExceptHandler) -> ControlFlowSubgraph:
     return ControlFlowSubgraph(graph, enter, exits=cfg.exits, jumps=cfg.jumps)
 
 
-def _build_try_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], handlers: typing.List[ast.ExceptHandler], orelse: typing.List[ast.AST]) -> ControlFlowSubgraph:
+def _build_try_block_cfg(
+    try_node: ast.Try,
+    body: typing.List[ast.AST],
+    handlers: typing.List[ast.ExceptHandler],
+    orelse: typing.List[ast.AST],
+) -> ControlFlowSubgraph:
 
     graph = Graph()
     enter = graph.add_node(try_node)
@@ -190,7 +212,7 @@ def _build_try_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], handlers
     body_cfg = _build_cfg(body)
 
     jumps = body_cfg.jumps
-    jumps.raises = [] # raises will be connected to all the handlers anyway
+    jumps.raises = []  # raises will be connected to all the handlers anyway
 
     graph.update(body_cfg.graph)
     graph.add_edge(enter, body_cfg.enter)
@@ -230,7 +252,13 @@ def _build_try_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], handlers
     return ControlFlowSubgraph(graph, enter, exits=exits, jumps=jumps)
 
 
-def _build_try_finally_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], handlers: typing.List[ast.ExceptHandler], orelse: typing.List[ast.AST], finalbody: typing.List[ast.AST]) -> ControlFlowSubgraph:
+def _build_try_finally_block_cfg(
+    try_node: ast.Try,
+    body: typing.List[ast.AST],
+    handlers: typing.List[ast.ExceptHandler],
+    orelse: typing.List[ast.AST],
+    finalbody: typing.List[ast.AST],
+) -> ControlFlowSubgraph:
 
     try_cfg = _build_try_block_cfg(try_node, body, handlers, orelse)
 
@@ -260,8 +288,11 @@ def _build_try_finally_block_cfg(try_node: ast.Try, body: typing.List[ast.AST], 
     breaks = pass_through(jumps.breaks)
 
     return ControlFlowSubgraph(
-        graph, try_cfg.enter, exits=final_cfg.exits,
-        jumps=Jumps(returns=returns, raises=raises, continues=continues, breaks=breaks))
+        graph,
+        try_cfg.enter,
+        exits=final_cfg.exits,
+        jumps=Jumps(returns=returns, raises=raises, continues=continues, breaks=breaks),
+    )
 
 
 def _build_try_finally_cfg(node):
@@ -283,7 +314,7 @@ def _build_node_cfg(node) -> ControlFlowSubgraph:
         ast.Continue: _build_continue_cfg,
         ast.Return: _build_return_cfg,
         ast.Try: _build_try_cfg,
-        }
+    }
 
     if type(node) in handlers:
         handler = handlers[type(node)]
@@ -327,4 +358,5 @@ def build_cfg(statements) -> ControlFlowGraph:
     assert len(cfg.jumps.breaks) == 0
     assert len(cfg.jumps.continues) == 0
     return ControlFlowGraph(
-        cfg.graph, cfg.enter, cfg.exits + cfg.jumps.returns, raises=cfg.jumps.raises)
+        cfg.graph, cfg.enter, cfg.exits + cfg.jumps.returns, raises=cfg.jumps.raises
+    )

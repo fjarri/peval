@@ -20,7 +20,6 @@ def inline_functions(tree: ast.AST, constants: ConstsDictT) -> PassOutputT:
 
 @ast_walker
 class _inline_functions_walker:
-
     @staticmethod
     def handle_Call(state, node, prepend, **_):
         gen_sym = state.gen_sym
@@ -31,7 +30,7 @@ class _inline_functions_walker:
         if not evaluated or not get_inline_tag(fn):
             return state, node
 
-        return_name, gen_sym = gen_sym('return')
+        return_name, gen_sym = gen_sym("return")
         inlined_body, gen_sym, constants = _inline(node, gen_sym, return_name, constants)
         prepend(inlined_body)
         new_state = state.update(gen_sym=gen_sym, constants=constants)
@@ -59,54 +58,53 @@ def _inline(node, gen_sym, return_name, constants):
     return parameter_assignments + inlined_body, gen_sym, constants
 
 
-def _wrap_in_loop(gen_sym: GenSym, body_nodes: typing.List[ast.If], return_name: str) -> typing.Tuple[GenSym, typing.List[ast.While], typing.Dict[typing.Any, typing.Any]]:
+def _wrap_in_loop(
+    gen_sym: GenSym, body_nodes: typing.List[ast.If], return_name: str
+) -> typing.Tuple[GenSym, typing.List[ast.While], typing.Dict[typing.Any, typing.Any]]:
 
     new_bindings = dict()
 
-    return_flag, gen_sym = gen_sym('return_flag')
+    return_flag, gen_sym = gen_sym("return_flag")
 
     # Adding an explicit return at the end of the function, if it's not present.
     if type(body_nodes[-1]) != ast.Return:
         body_nodes = body_nodes + [ast.Return(value=NONE_NODE)]
 
     inlined_code, returns_ctr, returns_in_loops = _replace_returns(
-        body_nodes, return_name, return_flag)
+        body_nodes, return_name, return_flag
+    )
 
     if returns_ctr == 1:
-    # A shortcut for a common case with a single return at the end of the function.
-    # No loop is required.
+        # A shortcut for a common case with a single return at the end of the function.
+        # No loop is required.
         inlined_body = inlined_code[:-1]
     else:
-    # Multiple returns - wrap in a `while` loop.
+        # Multiple returns - wrap in a `while` loop.
 
         if returns_in_loops:
             # `return_flag` value will be used to detect returns from nested loops
             inlined_body = [
-                ast.Assign(
-                    targets=[ast.Name(return_flag, ast.Store())],
-                    value=FALSE_NODE)]
+                ast.Assign(targets=[ast.Name(return_flag, ast.Store())], value=FALSE_NODE)
+            ]
         else:
             inlined_body = []
 
-
-        inlined_body.append(
-            ast.While(
-                test=TRUE_NODE,
-                body=inlined_code,
-                orelse=[]))
+        inlined_body.append(ast.While(test=TRUE_NODE, body=inlined_code, orelse=[]))
 
     return gen_sym, inlined_body, new_bindings
 
 
-def _build_parameter_assignments(call_node: ast.Call, functiondef_node: ast.FunctionDef) -> typing.List[ast.Assign]:
+def _build_parameter_assignments(
+    call_node: ast.Call, functiondef_node: ast.FunctionDef
+) -> typing.List[ast.Assign]:
     # currently variadic arguments are not supported
     assert all(type(arg) != ast.Starred for arg in call_node.args)
     assert all(kw.arg is not None for kw in call_node.keywords)
     parameter_assignments = []
     for callee_arg, fn_arg in zip(call_node.args, functiondef_node.args.args):
-        parameter_assignments.append(ast.Assign(
-            targets=[ast.Name(fn_arg.arg, ast.Store())],
-            value=callee_arg))
+        parameter_assignments.append(
+            ast.Assign(targets=[ast.Name(fn_arg.arg, ast.Store())], value=callee_arg)
+        )
     return parameter_assignments
 
 
@@ -127,10 +125,8 @@ def _handle_loop(node, state, ctx, visit_after, visiting_after, walk_field, **_)
         if state.return_inside_a_loop:
             new_nodes = [
                 node,
-                ast.If(
-                    test=ast.Name(id=ctx.return_flag_var),
-                    body=[ast.Break()],
-                    orelse=[])]
+                ast.If(test=ast.Name(id=ctx.return_flag_var), body=[ast.Break()], orelse=[]),
+            ]
         else:
             new_nodes = node
 
@@ -159,15 +155,16 @@ class _replace_returns_walker:
         state_update = dict(returns_ctr=state.returns_ctr + 1)
 
         new_nodes = [
-            ast.Assign(
-                targets=[ast.Name(id=ctx.return_var, ctx=ast.Store())],
-                value=node.value)]
+            ast.Assign(targets=[ast.Name(id=ctx.return_var, ctx=ast.Store())], value=node.value)
+        ]
 
         if state.loop_nesting_ctr > 0:
             new_nodes.append(
                 ast.Assign(
                     targets=[ast.Name(id=ctx.return_flag_var, ctx=ast.Store())],
-                    value=TRUE_NODE))
+                    value=TRUE_NODE,
+                )
+            )
             state_update.update(return_inside_a_loop=True, returns_in_loops=True)
 
         new_nodes.append(ast.Break())
@@ -175,11 +172,17 @@ class _replace_returns_walker:
         return state.update(state_update), new_nodes
 
 
-def _replace_returns(nodes: typing.List[ast.AST], return_var: str, return_flag_var: str) -> typing.Tuple[typing.List[typing.Union[ast.If, ast.Assign, ast.Break]], int, bool]:
+def _replace_returns(
+    nodes: typing.List[ast.AST], return_var: str, return_flag_var: str
+) -> typing.Tuple[typing.List[typing.Union[ast.If, ast.Assign, ast.Break]], int, bool]:
     state, new_nodes = _replace_returns_walker(
         dict(
-            returns_ctr=0, loop_nesting_ctr=0,
-            returns_in_loops=False, return_inside_a_loop=False),
+            returns_ctr=0,
+            loop_nesting_ctr=0,
+            returns_in_loops=False,
+            return_inside_a_loop=False,
+        ),
         nodes,
-        ctx=dict(return_var=return_var, return_flag_var=return_flag_var))
+        ctx=dict(return_var=return_var, return_flag_var=return_flag_var),
+    )
     return new_nodes, state.returns_ctr, state.returns_in_loops

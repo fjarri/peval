@@ -156,7 +156,6 @@ class immutableset(set):
         set.remove(new_set, elem)
         return new_set
 
-
     def difference(self, *args):
         res = self.__class__(set.difference(self, *args))
         if res == self:
@@ -172,7 +171,6 @@ class immutableset(set):
 
     def __isub__(self, *args):
         raise AttributeError("`-=` is not available for an immutable set")
-
 
     def union(self, *args) -> "immutableset":
         res = self.__class__(set.union(self, *args))
@@ -190,7 +188,6 @@ class immutableset(set):
     def __ior__(self, *args):
         raise AttributeError("`|=` is not available for an immutable set")
 
-
     def intersection(self, *args):
         res = self.__class__(set.intersection(self, *args))
         if res == self:
@@ -207,7 +204,6 @@ class immutableset(set):
     def __iand__(self, *args):
         raise AttributeError("`&=` is not available for an immutable set")
 
-
     def symmetric_difference(self, *args):
         res = self.__class__(set.symmetric_difference(self, *args))
         if res == self:
@@ -223,7 +219,6 @@ class immutableset(set):
 
     def __ixor__(self, *args):
         raise AttributeError("`^=` is not available for an immutable set")
-
 
     def __repr__(self):
         return set.__repr__(self)

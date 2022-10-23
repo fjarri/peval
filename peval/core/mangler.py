@@ -9,7 +9,9 @@ from peval.typing import NameNodeT
 import peval.tools.immutable
 
 
-def _visit_local(gen_sym: GenSym, node: NameNodeT, to_mangle: immutableset, mangled: immutableadict) -> typing.Tuple[GenSym, NameNodeT, peval.tools.immutable.immutabledict]:
+def _visit_local(
+    gen_sym: GenSym, node: NameNodeT, to_mangle: immutableset, mangled: immutableadict
+) -> typing.Tuple[GenSym, NameNodeT, peval.tools.immutable.immutabledict]:
     """
     Replacing known variables with literal values
     """
@@ -22,7 +24,7 @@ def _visit_local(gen_sym: GenSym, node: NameNodeT, to_mangle: immutableset, mang
         if node_id in mangled:
             mangled_id = mangled[node_id]
         else:
-            mangled_id, gen_sym = gen_sym('mangled')
+            mangled_id, gen_sym = gen_sym("mangled")
             mangled = mangled.set(node_id, mangled_id)
 
         if is_name:
@@ -44,15 +46,13 @@ class _mangle:
 
     @staticmethod
     def handle_arg(state, node, ctx, **_):
-        gen_sym, new_node, mangled = _visit_local(
-            state.gen_sym, node, ctx.fn_locals, state.mangled)
+        gen_sym, new_node, mangled = _visit_local(state.gen_sym, node, ctx.fn_locals, state.mangled)
         new_state = state.update(gen_sym=gen_sym, mangled=mangled)
         return new_state, new_node
 
     @staticmethod
     def handle_Name(state, node, ctx, **_):
-        gen_sym, new_node, mangled = _visit_local(
-            state.gen_sym, node, ctx.fn_locals, state.mangled)
+        gen_sym, new_node, mangled = _visit_local(state.gen_sym, node, ctx.fn_locals, state.mangled)
         new_state = state.update(gen_sym=gen_sym, mangled=mangled)
         return new_state, new_node
 
@@ -62,5 +62,6 @@ def mangle(gen_sym: GenSym, node: ast.FunctionDef) -> typing.Tuple[GenSym, ast.F
     state, new_node = _mangle(
         dict(gen_sym=gen_sym, mangled=immutabledict()),
         node,
-        ctx=dict(fn_locals=fn_locals))
+        ctx=dict(fn_locals=fn_locals),
+    )
     return state.gen_sym, new_node
