@@ -1,6 +1,6 @@
 import ast
 import sys
-import typing
+from typing import Any, Optional, Tuple, Dict
 
 from peval.core.gensym import GenSym
 from peval.typing import ConstantOrNameNodeT, ConsantOrASTNodeT
@@ -12,7 +12,7 @@ TRUE_NODE = ast.Constant(value=True, kind=None)
 
 
 class KnownValue(object):
-    def __init__(self, value: typing.Any, preferred_name: typing.Optional[str] = None) -> None:
+    def __init__(self, value: Any, preferred_name: Optional[str] = None) -> None:
         self.value = value
         self.preferred_name = preferred_name
 
@@ -30,11 +30,11 @@ class KnownValue(object):
         )
 
 
-def is_known_value(node_or_kvalue: typing.Any) -> bool:
+def is_known_value(node_or_kvalue: Any) -> bool:
     return type(node_or_kvalue) == KnownValue
 
 
-ReifyResT = typing.Tuple[ConstantOrNameNodeT, GenSym, typing.Dict[str, ConsantOrASTNodeT]]
+ReifyResT = Tuple[ConstantOrNameNodeT, GenSym, Dict[str, ConsantOrASTNodeT]]
 
 
 def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool = False) -> ReifyResT:

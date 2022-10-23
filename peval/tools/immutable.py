@@ -5,7 +5,7 @@ The classes in this module have the prefix 'immutable' to avoid confusion
 with the built-in ``frozenset``, which does not have any modification methods,
 even pure ones.
 """
-import typing
+from typing import Any
 
 
 class immutabledict(dict):
@@ -60,7 +60,7 @@ class immutabledict(dict):
     def __setitem__(self, key, item):
         raise AttributeError("Item assignment syntax is not available for an immutable dict")
 
-    def set(self, key: str, value: typing.Any) -> "immutabledict":
+    def set(self, key: str, value: Any) -> "immutabledict":
         if key in self and self[key] is value:
             return self
         else:
@@ -103,7 +103,7 @@ class immutableadict(immutabledict):
     (e.g. ``d['a']`` is equivalent to ``d.a``).
     """
 
-    def __getattr__(self, attr: str) -> typing.Any:
+    def __getattr__(self, attr: str) -> Any:
         return self[attr]
 
     def __setattr__(self, attr, value):

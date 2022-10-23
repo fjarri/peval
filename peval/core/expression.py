@@ -1,6 +1,6 @@
 import ast
 import operator
-import typing
+from typing import Tuple
 
 from peval.tools import Dispatcher, immutableadict, ast_equal, replace_fields
 from peval.core.gensym import GenSym
@@ -855,7 +855,7 @@ def _peval_expression(state: immutableadict, node, ctx: immutableadict):
 
 def peval_expression(
     node, gen_sym: GenSym, bindings: ConstsDictT, create_binding: bool = False
-) -> typing.Tuple[EvaluationResult, GenSym]:
+) -> Tuple[EvaluationResult, GenSym]:
 
     ctx = immutableadict(bindings=bindings)
     state = immutableadict(gen_sym=gen_sym, temp_bindings=immutableadict())

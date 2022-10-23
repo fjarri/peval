@@ -6,7 +6,7 @@ Inspired by the ``Walker`` class from ``macropy``.
 """
 
 import ast
-import typing
+from typing import Callable, Optional, Any, List, Tuple, Union
 
 from peval.tools.dispatcher import Dispatcher
 from peval.tools.immutable import immutableadict
@@ -126,9 +126,7 @@ _BLOCK_FIELDS = ("body", "orelse")
 
 
 class _Walker:
-    def __init__(
-        self, handler: typing.Callable, inspect: bool = False, transform: bool = False
-    ) -> None:
+    def __init__(self, handler: Callable, inspect: bool = False, transform: bool = False) -> None:
 
         self._transform = transform
         self._inspect = inspect
@@ -162,11 +160,11 @@ class _Walker:
 
     def _walk_list(
         self,
-        state: typing.Optional[immutableadict],
-        lst: typing.List[typing.Any],
-        ctx: typing.Optional[immutableadict],
+        state: Optional[immutableadict],
+        lst: List[Any],
+        ctx: Optional[immutableadict],
         block_context: bool = False,
-    ) -> typing.Tuple[typing.Optional[immutableadict], typing.List[typing.Any]]:
+    ) -> Tuple[Optional[immutableadict], List[Any]]:
         """
         Traverses a list of AST nodes.
         If ``block_context`` is ``True``, the list contains statements
@@ -218,11 +216,11 @@ class _Walker:
 
     def _walk_field(
         self,
-        state: typing.Optional[immutableadict],
-        value: typing.Any,
-        ctx: typing.Optional[immutableadict],
+        state: Optional[immutableadict],
+        value: Any,
+        ctx: Optional[immutableadict],
         block_context: bool = False,
-    ) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
+    ) -> Tuple[Optional[immutableadict], Any]:
         """
         Traverses a single AST node field.
         """
@@ -242,8 +240,8 @@ class _Walker:
     # to add it to the list of arguments later when `self._walk_field_user()` is called
 
     def _transform_field(
-        self, ctx: immutableadict, value: typing.Any, block_context: bool = False
-    ) -> typing.Tuple[typing.Optional[immutableadict], typing.Any]:
+        self, ctx: immutableadict, value: Any, block_context: bool = False
+    ) -> Tuple[Optional[immutableadict], Any]:
         return self._walk_field(None, value, ctx, block_context=block_context)[1]
 
     def _inspect_field(self, ctx, state, value, block_context=False):
@@ -254,9 +252,9 @@ class _Walker:
 
     def _walk_fields(
         self,
-        state: typing.Optional[immutableadict],
-        node: typing.Optional[ast.AST],
-        ctx: typing.Optional[immutableadict],
+        state: Optional[immutableadict],
+        node: Optional[ast.AST],
+        ctx: Optional[immutableadict],
     ) -> ast.AST:
         """
         Traverses all fields of an AST node.
@@ -288,12 +286,12 @@ class _Walker:
 
     def _handle_node(
         self,
-        state: typing.Optional[immutableadict],
+        state: Optional[immutableadict],
         node: ast.AST,
-        ctx: typing.Optional[immutableadict],
+        ctx: Optional[immutableadict],
         list_context: bool = False,
         visiting_after: bool = False,
-    ) -> typing.Any:
+    ) -> Any:
         def prepend(nodes):
             self._current_block_stack[-1].extend(nodes)
 
@@ -353,11 +351,11 @@ class _Walker:
 
     def _walk_node(
         self,
-        state: typing.Optional[immutableadict],
+        state: Optional[immutableadict],
         node: ast.AST,
-        ctx: typing.Optional[immutableadict],
+        ctx: Optional[immutableadict],
         list_context: bool = False,
-    ) -> typing.Tuple[typing.Optional[immutableadict], ast.AST]:
+    ) -> Tuple[Optional[immutableadict], ast.AST]:
         """
         Traverses an AST node and its fields.
         """
@@ -378,11 +376,7 @@ class _Walker:
 
     def __call__(
         self, *args, ctx=None
-    ) -> typing.Union[
-        typing.Optional[immutableadict],
-        ast.AST,
-        typing.Tuple[typing.Optional[immutableadict], ast.AST],
-    ]:
+    ) -> Union[Optional[immutableadict], ast.AST, Tuple[Optional[immutableadict], ast.AST],]:
 
         if self._transform and self._inspect:
             if len(args) != 2:

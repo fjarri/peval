@@ -1,5 +1,5 @@
 from collections import defaultdict
-import typing
+from typing import Optional, DefaultDict, Tuple
 
 from peval.core.scope import analyze_scope
 from ast import FunctionDef
@@ -9,8 +9,8 @@ from peval.tools.immutable import immutableset
 class GenSym(object):
     def __init__(
         self,
-        taken_names: typing.Optional[immutableset] = None,
-        counters: typing.Optional[typing.DefaultDict[str, int]] = None,
+        taken_names: Optional[immutableset] = None,
+        counters: Optional[DefaultDict[str, int]] = None,
     ) -> None:
         self._taken_names = taken_names if taken_names is not None else set()
 
@@ -26,7 +26,7 @@ class GenSym(object):
             self._counters = counters.copy()
 
     @classmethod
-    def for_tree(cls, tree: typing.Optional[FunctionDef] = None) -> "GenSym":
+    def for_tree(cls, tree: Optional[FunctionDef] = None) -> "GenSym":
         if tree is not None:
             scope = analyze_scope(tree)
             taken_names = scope.locals | scope.globals
@@ -34,7 +34,7 @@ class GenSym(object):
             taken_names = None
         return cls(taken_names=taken_names)
 
-    def __call__(self, tag: str = "sym") -> typing.Tuple[str, "GenSym"]:
+    def __call__(self, tag: str = "sym") -> Tuple[str, "GenSym"]:
         counter = self._counters[tag]
         while True:
             name = "__peval_" + tag + "_" + str(counter)

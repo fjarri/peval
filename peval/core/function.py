@@ -8,7 +8,7 @@ import inspect
 from functools import reduce
 from types import FunctionType
 from collections import OrderedDict
-import typing
+from typing import Union, Optional, Callable, List, Iterable, Set
 
 import astunparse
 
@@ -37,10 +37,10 @@ FUTURE_FLAGS = reduce(
 
 
 def eval_function_def(
-    function_def: typing.Union[ast.AsyncFunctionDef, ast.FunctionDef],
+    function_def: Union[ast.AsyncFunctionDef, ast.FunctionDef],
     globals_=None,
-    flags: typing.Optional[int] = None,
-) -> typing.Callable:
+    flags: Optional[int] = None,
+) -> Callable:
     """
     Evaluates an AST of a function definition with an optional dictionary of globals.
     Returns a callable function (a ``types.FunctionType`` object).
@@ -66,10 +66,10 @@ def eval_function_def(
 
 def eval_function_def_as_closure(
     function_def: ast.FunctionDef,
-    closure_names: typing.List[str],
-    globals_: typing.Optional[ConstsDictT] = None,
-    flags: typing.Optional[int] = None,
-) -> typing.Callable:
+    closure_names: List[str],
+    globals_: Optional[ConstsDictT] = None,
+    flags: Optional[int] = None,
+) -> Callable:
     """
     Evaluates an AST of a function definition inside a closure with the variables
     from ``closure_names`` set to ``None``, and an optional dictionary of globals.
@@ -116,7 +116,7 @@ def eval_function_def_as_closure(
     return wrapper()
 
 
-def get_closure(func: typing.Callable) -> OrderedDict:
+def get_closure(func: Callable) -> OrderedDict:
     """
     Extracts names and values of closure variables from a function.
     Returns a tuple ``(names, cells)``, where ``names`` is a tuple of strings
@@ -130,7 +130,7 @@ def get_closure(func: typing.Callable) -> OrderedDict:
     return OrderedDict((name, val) for name, val in zip(closure_names, closure_vals))
 
 
-def filter_arglist(args: typing.Iterable[ast.arg], defaults, bound_argnames: typing.Set[str]):
+def filter_arglist(args: Iterable[ast.arg], defaults, bound_argnames: Set[str]):
     """
     Filters a list of function argument nodes (``ast.arg``)
     and corresponding defaults to exclude all arguments with the names
@@ -149,7 +149,7 @@ def filter_arglist(args: typing.Iterable[ast.arg], defaults, bound_argnames: typ
     return new_args, new_defaults
 
 
-def filter_arguments(arguments: ast.arguments, bound_argnames: typing.Set[str]) -> ast.arguments:
+def filter_arguments(arguments: ast.arguments, bound_argnames: Set[str]) -> ast.arguments:
     """
     Filters a node containing function arguments (an ``ast.arguments`` object)
     to exclude all arguments with the names present in ``bound_arguments``.
@@ -180,9 +180,7 @@ def filter_arguments(arguments: ast.arguments, bound_argnames: typing.Set[str]) 
     return ast.arguments(**new_params)
 
 
-def filter_function_def(
-    function_def: ast.FunctionDef, bound_argnames: typing.Set[str]
-) -> ast.FunctionDef:
+def filter_function_def(function_def: ast.FunctionDef, bound_argnames: Set[str]) -> ast.FunctionDef:
     """
     Filters a node containing a function definition
     (an ``ast.FunctionDef`` or an ``ast.AsyncFunctionDef`` object)
@@ -231,7 +229,7 @@ class Function(object):
 
     def __init__(
         self,
-        tree: typing.Union[ast.AsyncFunctionDef, ast.FunctionDef],
+        tree: Union[ast.AsyncFunctionDef, ast.FunctionDef],
         globals_,
         closure_vals,
         compiler_flags: int,
@@ -272,7 +270,7 @@ class Function(object):
         return astunparse.unparse(self.tree)
 
     @classmethod
-    def from_object(cls, func: typing.Callable, ignore_decorators: bool = False) -> "Function":
+    def from_object(cls, func: Callable, ignore_decorators: bool = False) -> "Function":
         """
         Creates a ``Function`` object from an evaluated function.
         """
@@ -352,7 +350,7 @@ class Function(object):
 
         return Function(new_tree, new_globals, self.closure_vals, self._compiler_flags)
 
-    def eval(self) -> typing.Callable:
+    def eval(self) -> Callable:
         """
         Evaluates and returns a callable function.
         """
@@ -392,8 +390,8 @@ class Function(object):
 
     def replace(
         self,
-        tree: typing.Optional[ast.FunctionDef] = None,
-        globals_: typing.Optional[ConstsDictT] = None,
+        tree: Optional[ast.FunctionDef] = None,
+        globals_: Optional[ConstsDictT] = None,
     ) -> "Function":
         """
         Replaces the AST and/or globals and returns a new ``Function`` object.
@@ -419,7 +417,7 @@ class Function(object):
         return Function(tree, globals_, new_closure_vals, self._compiler_flags)
 
 
-def getsource(func: typing.Callable) -> str:
+def getsource(func: Callable) -> str:
     """
     Returns the source of a function ``func``.
     Falls back to ``inspect.getsource()`` for regular functions,

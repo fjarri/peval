@@ -1,5 +1,5 @@
 import ast
-import typing
+from typing import Tuple
 
 from peval.tools import immutabledict, ast_walker
 from peval.core.scope import analyze_scope
@@ -11,7 +11,7 @@ import peval.tools.immutable
 
 def _visit_local(
     gen_sym: GenSym, node: NameNodeT, to_mangle: immutableset, mangled: immutableadict
-) -> typing.Tuple[GenSym, NameNodeT, peval.tools.immutable.immutabledict]:
+) -> Tuple[GenSym, NameNodeT, peval.tools.immutable.immutabledict]:
     """
     Replacing known variables with literal values
     """
@@ -57,7 +57,7 @@ class _mangle:
         return new_state, new_node
 
 
-def mangle(gen_sym: GenSym, node: ast.FunctionDef) -> typing.Tuple[GenSym, ast.FunctionDef]:
+def mangle(gen_sym: GenSym, node: ast.FunctionDef) -> Tuple[GenSym, ast.FunctionDef]:
     fn_locals = analyze_scope(node).locals
     state, new_node = _mangle(
         dict(gen_sym=gen_sym, mangled=immutabledict()),

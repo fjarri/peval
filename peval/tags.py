@@ -1,9 +1,9 @@
-import typing
+from typing import Callable, Optional
 
 from peval.core.function import Function, has_nested_definitions, is_a_generator, is_async
 
 
-def pure(func: typing.Callable) -> typing.Callable:
+def pure(func: Callable) -> Callable:
     """
     Marks the function as pure (not having any side effects, except maybe argument mutation).
     """
@@ -11,11 +11,11 @@ def pure(func: typing.Callable) -> typing.Callable:
     return func
 
 
-def get_pure_tag(func: typing.Callable) -> typing.Optional[bool]:
+def get_pure_tag(func: Callable) -> Optional[bool]:
     return getattr(func, "__peval_pure__", None)
 
 
-def inline(func: typing.Callable) -> typing.Callable:
+def inline(func: Callable) -> Callable:
     """
     Marks the function for inlining.
     """
@@ -37,5 +37,5 @@ def inline(func: typing.Callable) -> typing.Callable:
     return func
 
 
-def get_inline_tag(func: typing.Callable) -> typing.Optional[bool]:
+def get_inline_tag(func: Callable) -> Optional[bool]:
     return getattr(func, "__peval_inline__", None)

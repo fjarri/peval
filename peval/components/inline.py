@@ -1,5 +1,5 @@
 import ast
-import typing
+from typing import List, Tuple, Dict, Any, Union
 
 from peval.tags import get_inline_tag
 from peval.core.reify import NONE_NODE, FALSE_NODE, TRUE_NODE
@@ -59,8 +59,8 @@ def _inline(node, gen_sym, return_name, constants):
 
 
 def _wrap_in_loop(
-    gen_sym: GenSym, body_nodes: typing.List[ast.If], return_name: str
-) -> typing.Tuple[GenSym, typing.List[ast.While], typing.Dict[typing.Any, typing.Any]]:
+    gen_sym: GenSym, body_nodes: List[ast.If], return_name: str
+) -> Tuple[GenSym, List[ast.While], Dict[Any, Any]]:
 
     new_bindings = dict()
 
@@ -96,7 +96,7 @@ def _wrap_in_loop(
 
 def _build_parameter_assignments(
     call_node: ast.Call, functiondef_node: ast.FunctionDef
-) -> typing.List[ast.Assign]:
+) -> List[ast.Assign]:
     # currently variadic arguments are not supported
     assert all(type(arg) != ast.Starred for arg in call_node.args)
     assert all(kw.arg is not None for kw in call_node.keywords)
@@ -173,8 +173,8 @@ class _replace_returns_walker:
 
 
 def _replace_returns(
-    nodes: typing.List[ast.AST], return_var: str, return_flag_var: str
-) -> typing.Tuple[typing.List[typing.Union[ast.If, ast.Assign, ast.Break]], int, bool]:
+    nodes: List[ast.AST], return_var: str, return_flag_var: str
+) -> Tuple[List[Union[ast.If, ast.Assign, ast.Break]], int, bool]:
     state, new_nodes = _replace_returns_walker(
         dict(
             returns_ctr=0,

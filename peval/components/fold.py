@@ -1,6 +1,6 @@
 import ast
 from functools import reduce
-import typing
+from typing import Optional, Any, Dict, Callable, Iterable, List, Mapping, Tuple, List, Union
 
 from peval.tools import replace_fields, ast_transformer
 from peval.core.gensym import GenSym
@@ -11,7 +11,7 @@ from peval.typing import ConstsDictT, PassOutputT
 
 
 class Value:
-    def __init__(self, value: typing.Optional[typing.Any] = None, undefined: bool = False) -> None:
+    def __init__(self, value: Optional[Any] = None, undefined: bool = False) -> None:
         if undefined:
             self.defined = False
             self.value = None
@@ -61,7 +61,7 @@ def meet_values(val1: Value, val2: Value) -> Value:
 
 
 class Environment:
-    def __init__(self, values: typing.Dict[str, Value]) -> None:
+    def __init__(self, values: Dict[str, Value]) -> None:
         self.values = values if values is not None else {}
 
     @classmethod
@@ -101,7 +101,7 @@ def meet_envs(env1: Environment, env2: Environment) -> Environment:
     return Environment(values=result)
 
 
-def my_reduce(func: typing.Callable, seq: typing.Iterable[Environment]) -> Environment:
+def my_reduce(func: Callable, seq: Iterable[Environment]) -> Environment:
     if len(seq) == 1:
         return seq[0]
     else:
@@ -109,17 +109,17 @@ def my_reduce(func: typing.Callable, seq: typing.Iterable[Environment]) -> Envir
 
 
 class CachedExpression:
-    def __init__(self, path: typing.List[str], node: ast.expr) -> None:
+    def __init__(self, path: List[str], node: ast.expr) -> None:
         self.node = node
         self.path = path
 
 
-TempBindingsT = typing.Mapping[str, typing.Any]
+TempBindingsT = Mapping[str, Any]
 
 
 def forward_transfer(
     gen_sym: GenSym, in_env: Environment, statement: ast.stmt
-) -> typing.Tuple[GenSym, Environment, typing.List[CachedExpression], TempBindingsT]:
+) -> Tuple[GenSym, Environment, List[CachedExpression], TempBindingsT]:
 
     if isinstance(statement, (ast.Assign, ast.AnnAssign)):
         if isinstance(statement, ast.AnnAssign):
@@ -183,7 +183,7 @@ class State:
         self,
         in_env: Environment,
         out_env: Environment,
-        exprs: typing.List[CachedExpression],
+        exprs: List[CachedExpression],
         temp_bindings: immutableadict,
     ) -> None:
         self.in_env = in_env
@@ -192,7 +192,7 @@ class State:
         self.temp_bindings = temp_bindings
 
 
-def get_sorted_nodes(graph: Graph, enter: int) -> typing.List[int]:
+def get_sorted_nodes(graph: Graph, enter: int) -> List[int]:
     sorted_nodes = []
     todo_list = [enter]
     visited = set()
@@ -212,7 +212,7 @@ def get_sorted_nodes(graph: Graph, enter: int) -> typing.List[int]:
 
 def maximal_fixed_point(
     gen_sym: GenSym, graph: Graph, enter: int, bindings: ConstsDictT
-) -> typing.Tuple[typing.List[CachedExpression], TempBindingsT]:
+) -> Tuple[List[CachedExpression], TempBindingsT]:
 
     states = dict(
         (
@@ -286,16 +286,16 @@ def maximal_fixed_point(
 
 
 def replace_exprs(
-    tree: ast.FunctionDef, new_exprs: typing.Dict[int, typing.List[CachedExpression]]
-) -> typing.Union[ast.FunctionDef, ast.Module]:
+    tree: ast.FunctionDef, new_exprs: Dict[int, List[CachedExpression]]
+) -> Union[ast.FunctionDef, ast.Module]:
     return _replace_exprs(tree, ctx=dict(new_exprs=new_exprs))
 
 
-ReplaceByPathNodeT = typing.Union[ast.If, ast.Assign, ast.Expr, ast.Return]
+ReplaceByPathNodeT = Union[ast.If, ast.Assign, ast.Expr, ast.Return]
 
 
 def replace_by_path(
-    obj: ReplaceByPathNodeT, path: typing.Iterable[str], new_value: ast.expr
+    obj: ReplaceByPathNodeT, path: Iterable[str], new_value: ast.expr
 ) -> ReplaceByPathNodeT:
 
     ptr = path[0]

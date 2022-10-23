@@ -1,12 +1,13 @@
 import ast
 import types
-import typing
+from typing import Tuple, Callable, Optional
+
 from .immutable import immutabledict
 
 StateT = immutabledict
 ContextT = immutabledict
-HandlerResultT = typing.Tuple[StateT, ast.AST]
-HandlerT = typing.Callable[[StateT, ast.AST, ContextT], HandlerResultT]
+HandlerResultT = Tuple[StateT, ast.AST]
+HandlerT = Callable[[StateT, ast.AST, ContextT], HandlerResultT]
 
 
 class Dispatcher:
@@ -37,9 +38,7 @@ class Dispatcher:
     a ``ValueError`` is thrown.
     """
 
-    def __init__(
-        self, handler_obj: HandlerT, default_handler: typing.Optional[HandlerT] = None
-    ) -> None:
+    def __init__(self, handler_obj: HandlerT, default_handler: Optional[HandlerT] = None) -> None:
         if isinstance(handler_obj, types.FunctionType):
             self._handlers = {}
             self._default_handler = handler_obj

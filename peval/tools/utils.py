@@ -1,6 +1,6 @@
 import ast
 import re
-import typing
+from typing import Callable, Any, Iterable, Tuple
 
 
 def unindent(source: str) -> str:
@@ -64,9 +64,7 @@ def ast_equal(node1: ast.AST, node2: ast.AST) -> bool:
     return True
 
 
-def map_accum(
-    func: typing.Callable, acc: typing.Any, container: typing.Iterable, *args
-) -> typing.Tuple[typing.Any, typing.Iterable]:
+def map_accum(func: Callable, acc: Any, container: Iterable, *args) -> Tuple[Any, Iterable]:
     if container is None:
         return acc, None
     elif type(container) in (list, tuple, zip):
@@ -86,7 +84,7 @@ def map_accum(
         return func(acc, container, *args)
 
 
-def fold_and(func: typing.Callable, container) -> bool:
+def fold_and(func: Callable, container) -> bool:
     if type(container) in (list, tuple, zip):
         return all(fold_and(func, elem) for elem in container)
     elif type(container) == dict:
