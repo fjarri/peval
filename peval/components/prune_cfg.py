@@ -28,7 +28,7 @@ def remove_unreachable_statements(node, walk_field, **kwds):
     for attr in ('body', 'orelse'):
         if hasattr(node, attr):
             old_list = getattr(node, attr)
-            not_list = isinstance(node, ast.AST)
+            not_list = isinstance(old_list, ast.AST)
             if not_list:
                 old_list = [old_list]
             new_list = filter_block(old_list)
