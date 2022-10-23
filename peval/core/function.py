@@ -12,7 +12,7 @@ from typing import Union, Optional, Callable, List, Iterable, Set
 
 import astunparse
 
-from peval.tools import unindent, replace_fields, immutableadict, ast_inspector, ast_transformer
+from peval.tools import unindent, replace_fields, ImmutableADict, ast_inspector, ast_transformer
 from peval.core.gensym import GenSym
 from peval.core.reify import reify_unwrapped
 from peval.core.scope import analyze_scope
@@ -251,7 +251,7 @@ class Function(object):
 
             future_features[feature_name] = enabled_by_flag or enabled_by_default
 
-        self.future_features = immutableadict(future_features)
+        self.future_features = ImmutableADict(future_features)
 
     def get_external_variables(self) -> ConstsDictT:
         """

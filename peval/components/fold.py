@@ -6,7 +6,7 @@ from peval.tools import replace_fields, ast_transformer
 from peval.core.gensym import GenSym
 from peval.core.cfg import Graph, build_cfg
 from peval.core.expression import peval_expression
-from peval.tools.immutable import immutableadict
+from peval.tools.immutable import ImmutableADict
 from peval.typing import ConstsDictT, PassOutputT
 
 
@@ -184,7 +184,7 @@ class State:
         in_env: Environment,
         out_env: Environment,
         exprs: List[CachedExpression],
-        temp_bindings: immutableadict,
+        temp_bindings: ImmutableADict,
     ) -> None:
         self.in_env = in_env
         self.out_env = out_env

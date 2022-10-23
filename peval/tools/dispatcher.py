@@ -2,10 +2,10 @@ import ast
 import types
 from typing import Tuple, Callable, Optional
 
-from .immutable import immutabledict
+from .immutable import ImmutableDict
 
-StateT = immutabledict
-ContextT = immutabledict
+StateT = ImmutableDict
+ContextT = ImmutableDict
 HandlerResultT = Tuple[StateT, ast.AST]
 HandlerT = Callable[[StateT, ast.AST, ContextT], HandlerResultT]
 

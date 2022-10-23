@@ -8,7 +8,7 @@ import pytest
 from peval.tools import (
     unindent,
     replace_fields,
-    immutableset,
+    ImmutableSet,
     ast_inspector,
     ast_transformer,
     ast_walker,
@@ -75,7 +75,7 @@ def test_inspector():
             return state
 
     node = get_ast(dummy)
-    state = collect_numbers(dict(numbers=immutableset()), node)
+    state = collect_numbers(dict(numbers=ImmutableSet()), node)
     assert state.numbers == set([1, 4])
 
 
@@ -88,7 +88,7 @@ def test_walk_list():
             return state
 
     node = get_ast(dummy)
-    state = collect_numbers(dict(numbers=immutableset()), node.body)
+    state = collect_numbers(dict(numbers=ImmutableSet()), node.body)
     assert state.numbers == set([1, 4])
 
 
@@ -101,7 +101,7 @@ def test_walker():
             return state, node
 
     node = get_ast(dummy)
-    state, new_node = process_numbers(dict(numbers=immutableset()), node)
+    state, new_node = process_numbers(dict(numbers=ImmutableSet()), node)
 
     assert state.numbers == set([1, 4])
     assert_ast_equal(
@@ -338,10 +338,10 @@ def test_dispatched_walker():
 
     node = get_ast(dummy)
 
-    state = collect_numbers(dict(numbers=immutableset()), node)
+    state = collect_numbers(dict(numbers=ImmutableSet()), node)
     assert state.numbers == set([1, 4])
 
-    state = collect_numbers_with_default(dict(numbers=immutableset()), node)
+    state = collect_numbers_with_default(dict(numbers=ImmutableSet()), node)
     assert state.numbers == set([1, 4])
 
 
@@ -555,7 +555,7 @@ def test_walk_field_inspect():
             return state
 
     node = get_ast(dummy)
-    state = names_and_nums(dict(objs=immutableset()), node)
+    state = names_and_nums(dict(objs=ImmutableSet()), node)
     assert state.objs == set(["a", "c", 1, 4])
 
 
@@ -573,7 +573,7 @@ def test_walk_field_transform_inspect():
             return state, node
 
     node = get_ast(dummy)
-    state, new_node = names_and_incremented_nums(dict(objs=immutableset()), node)
+    state, new_node = names_and_incremented_nums(dict(objs=ImmutableSet()), node)
     assert state.objs == set(["a", "c", 1, 4])
     assert_ast_equal(
         new_node,

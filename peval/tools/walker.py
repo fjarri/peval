@@ -9,7 +9,7 @@ import ast
 from typing import Callable, Optional, Any, List, Tuple, Union
 
 from peval.tools.dispatcher import Dispatcher
-from peval.tools.immutable import immutableadict
+from peval.tools.immutable import ImmutableADict
 
 
 def ast_walker(handler):
@@ -24,12 +24,12 @@ def ast_walker(handler):
         def walker(state, node, ctx=None)
 
     :param state: a dictionary with the state which will be passed to every handler call.
-        It will be converted into a :class:`~peval.tools.immutableadict` object
+        It will be converted into a :class:`~peval.tools.ImmutableADict` object
         at the start of the traversal.
         Handlers can update it by returning a modified version.
     :param node: an ``ast.AST`` object to traverse.
     :param ctx: a dictionary with the global context which will be passed to every handler call.
-        It will be converted into a :class:`~peval.tools.immutableadict` object
+        It will be converted into a :class:`~peval.tools.ImmutableADict` object
         at the start of the traversal.
     :returns: a tuple ``(state, new_node)``, where ``state`` is the same object which was passed
         as the corresponding parameter.
@@ -160,11 +160,11 @@ class _Walker:
 
     def _walk_list(
         self,
-        state: Optional[immutableadict],
+        state: Optional[ImmutableADict],
         lst: List[Any],
-        ctx: Optional[immutableadict],
+        ctx: Optional[ImmutableADict],
         block_context: bool = False,
-    ) -> Tuple[Optional[immutableadict], List[Any]]:
+    ) -> Tuple[Optional[ImmutableADict], List[Any]]:
         """
         Traverses a list of AST nodes.
         If ``block_context`` is ``True``, the list contains statements
@@ -216,11 +216,11 @@ class _Walker:
 
     def _walk_field(
         self,
-        state: Optional[immutableadict],
+        state: Optional[ImmutableADict],
         value: Any,
-        ctx: Optional[immutableadict],
+        ctx: Optional[ImmutableADict],
         block_context: bool = False,
-    ) -> Tuple[Optional[immutableadict], Any]:
+    ) -> Tuple[Optional[ImmutableADict], Any]:
         """
         Traverses a single AST node field.
         """
@@ -240,8 +240,8 @@ class _Walker:
     # to add it to the list of arguments later when `self._walk_field_user()` is called
 
     def _transform_field(
-        self, ctx: immutableadict, value: Any, block_context: bool = False
-    ) -> Tuple[Optional[immutableadict], Any]:
+        self, ctx: ImmutableADict, value: Any, block_context: bool = False
+    ) -> Tuple[Optional[ImmutableADict], Any]:
         return self._walk_field(None, value, ctx, block_context=block_context)[1]
 
     def _inspect_field(self, ctx, state, value, block_context=False):
@@ -252,9 +252,9 @@ class _Walker:
 
     def _walk_fields(
         self,
-        state: Optional[immutableadict],
+        state: Optional[ImmutableADict],
         node: Optional[ast.AST],
-        ctx: Optional[immutableadict],
+        ctx: Optional[ImmutableADict],
     ) -> ast.AST:
         """
         Traverses all fields of an AST node.
@@ -286,9 +286,9 @@ class _Walker:
 
     def _handle_node(
         self,
-        state: Optional[immutableadict],
+        state: Optional[ImmutableADict],
         node: ast.AST,
-        ctx: Optional[immutableadict],
+        ctx: Optional[ImmutableADict],
         list_context: bool = False,
         visiting_after: bool = False,
     ) -> Any:
@@ -351,11 +351,11 @@ class _Walker:
 
     def _walk_node(
         self,
-        state: Optional[immutableadict],
+        state: Optional[ImmutableADict],
         node: ast.AST,
-        ctx: Optional[immutableadict],
+        ctx: Optional[ImmutableADict],
         list_context: bool = False,
-    ) -> Tuple[Optional[immutableadict], ast.AST]:
+    ) -> Tuple[Optional[ImmutableADict], ast.AST]:
         """
         Traverses an AST node and its fields.
         """
@@ -376,7 +376,7 @@ class _Walker:
 
     def __call__(
         self, *args, ctx=None
-    ) -> Union[Optional[immutableadict], ast.AST, Tuple[Optional[immutableadict], ast.AST],]:
+    ) -> Union[Optional[ImmutableADict], ast.AST, Tuple[Optional[ImmutableADict], ast.AST],]:
 
         if self._transform and self._inspect:
             if len(args) != 2:
@@ -404,10 +404,10 @@ class _Walker:
             state, node = args
 
         if ctx is not None:
-            ctx = immutableadict(ctx)
+            ctx = ImmutableADict(ctx)
 
         if state is not None:
-            state = immutableadict(state)
+            state = ImmutableADict(state)
 
         if isinstance(node, ast.AST):
             new_state, new_node = self._walk_node(state, node, ctx)

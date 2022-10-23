@@ -8,7 +8,7 @@ even pure ones.
 from typing import Any
 
 
-class immutabledict(dict):
+class ImmutableDict(dict):
     """
     An immutable version of ``dict``.
 
@@ -49,7 +49,7 @@ class immutabledict(dict):
     def __delitem__(self, key):
         raise AttributeError("Item deletion syntax is not available for an immutable dict")
 
-    def del_(self, key: str) -> "immutableadict":
+    def del_(self, key: str) -> "ImmutableADict":
         if key in self:
             new_dict = self.__class__(self)
             dict.__delitem__(new_dict, key)
@@ -60,7 +60,7 @@ class immutabledict(dict):
     def __setitem__(self, key, item):
         raise AttributeError("Item assignment syntax is not available for an immutable dict")
 
-    def set(self, key: str, value: Any) -> "immutabledict":
+    def set(self, key: str, value: Any) -> "ImmutableDict":
         if key in self and self[key] is value:
             return self
         else:
@@ -68,7 +68,7 @@ class immutabledict(dict):
             dict.__setitem__(new_dict, key, value)
             return new_dict
 
-    def update(self, *args, **kwds) -> "immutabledict":
+    def update(self, *args, **kwds) -> "ImmutableDict":
 
         if len(kwds) == 0 and len(args) == 0:
             return self
@@ -94,12 +94,12 @@ class immutabledict(dict):
         return new_dict
 
     def __repr__(self):
-        return "immutabledict(" + dict.__repr__(self) + ")"
+        return "ImmutableDict(" + dict.__repr__(self) + ")"
 
 
-class immutableadict(immutabledict):
+class ImmutableADict(ImmutableDict):
     """
-    A subclass of ``immutabledict`` with values being accessible as attributes
+    A subclass of ``ImmutableDict`` with values being accessible as attributes
     (e.g. ``d['a']`` is equivalent to ``d.a``).
     """
 
@@ -110,10 +110,10 @@ class immutableadict(immutabledict):
         raise AttributeError("Attribute assignment syntax is not available for an immutable dict")
 
     def __repr__(self):
-        return "immutableadict(" + dict.__repr__(self) + ")"
+        return "ImmutableADict(" + dict.__repr__(self) + ")"
 
 
-class immutableset(set):
+class ImmutableSet(set):
     """
     An immutable version of ``set``.
 
@@ -124,7 +124,7 @@ class immutableset(set):
     the source set itself is returned as the new set.
     """
 
-    def add(self, elem: str) -> "immutableset":
+    def add(self, elem: str) -> "ImmutableSet":
         if elem in self:
             return self
         else:
@@ -151,7 +151,7 @@ class immutableset(set):
         elem = set.pop(new_set)
         return elem, new_set
 
-    def remove(self, elem: str) -> "immutableset":
+    def remove(self, elem: str) -> "ImmutableSet":
         new_set = self.__class__(self)
         set.remove(new_set, elem)
         return new_set
@@ -172,14 +172,14 @@ class immutableset(set):
     def __isub__(self, *args):
         raise AttributeError("`-=` is not available for an immutable set")
 
-    def union(self, *args) -> "immutableset":
+    def union(self, *args) -> "ImmutableSet":
         res = self.__class__(set.union(self, *args))
         if res == self:
             return self
         else:
             return res
 
-    def __or__(self, other: "immutableset") -> "immutableset":
+    def __or__(self, other: "ImmutableSet") -> "ImmutableSet":
         return self.union(other)
 
     def update(self, *args):

@@ -2,7 +2,7 @@ import ast
 import typing
 
 from peval.core.gensym import GenSym
-from peval.tools import replace_fields, ast_walker, immutabledict
+from peval.tools import replace_fields, ast_walker, ImmutableDict
 from peval.core.expression import peval_expression
 from peval.typing import ConstsDictT, PassOutputT
 
@@ -46,7 +46,7 @@ def peval_function_header(tree: ast.FunctionDef, constants: ConstsDictT) -> Pass
     """
     gen_sym = GenSym.for_tree(tree)
     state, new_tree = _peval_function_header(
-        dict(new_bindings=immutabledict(), gen_sym=gen_sym),
+        dict(new_bindings=ImmutableDict(), gen_sym=gen_sym),
         tree,
         ctx=dict(constants=constants),
     )

@@ -3,13 +3,13 @@ from typing import Optional, DefaultDict, Tuple
 
 from peval.core.scope import analyze_scope
 from ast import FunctionDef
-from peval.tools.immutable import immutableset
+from peval.tools.immutable import ImmutableSet
 
 
 class GenSym(object):
     def __init__(
         self,
-        taken_names: Optional[immutableset] = None,
+        taken_names: Optional[ImmutableSet] = None,
         counters: Optional[DefaultDict[str, int]] = None,
     ) -> None:
         self._taken_names = taken_names if taken_names is not None else set()

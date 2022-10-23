@@ -1,7 +1,7 @@
 import ast
 from collections import namedtuple
 
-from peval.tools import immutableset, ast_inspector
+from peval.tools import ImmutableSet, ast_inspector
 
 
 Scope = namedtuple("Scope", "locals locals_used globals")
@@ -38,7 +38,7 @@ class _analyze_scope:
 
 def analyze_scope(node: ast.AST) -> Scope:
     state = _analyze_scope(
-        dict(locals=immutableset(), locals_used=immutableset(), globals=immutableset()),
+        dict(locals=ImmutableSet(), locals_used=ImmutableSet(), globals=ImmutableSet()),
         node,
     )
     return Scope(locals=state.locals, locals_used=state.locals_used, globals=state.globals)
