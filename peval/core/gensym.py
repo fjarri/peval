@@ -1,18 +1,17 @@
 from collections import defaultdict
-from typing import Optional, DefaultDict, Tuple
+from typing import Optional, DefaultDict, Tuple, FrozenSet
 
 from peval.core.scope import analyze_scope
 from ast import FunctionDef
-from peval.tools.immutable import ImmutableSet
 
 
-class GenSym(object):
+class GenSym:
     def __init__(
         self,
-        taken_names: Optional[ImmutableSet] = None,
+        taken_names: Optional[FrozenSet[str]] = None,
         counters: Optional[DefaultDict[str, int]] = None,
     ) -> None:
-        self._taken_names = taken_names if taken_names is not None else set()
+        self._taken_names = taken_names if taken_names is not None else frozenset()
 
         # Keeping per-tag counters affects performance,
         # but the creation of new names happens quite rarely,

@@ -1,16 +1,16 @@
 import ast
-from typing import Tuple
+from typing import Tuple, FrozenSet
 
 from peval.tools import ImmutableDict, ast_walker
 from peval.core.scope import analyze_scope
-from peval.tools.immutable import ImmutableSet, ImmutableADict
+from peval.tools.immutable import ImmutableADict
 from peval.core.gensym import GenSym
 from peval.typing import NameNodeT
 from peval.tools.immutable import ImmutableDict
 
 
 def _visit_local(
-    gen_sym: GenSym, node: NameNodeT, to_mangle: ImmutableSet, mangled: ImmutableADict
+    gen_sym: GenSym, node: NameNodeT, to_mangle: FrozenSet[str], mangled: ImmutableADict
 ) -> Tuple[GenSym, NameNodeT, ImmutableDict]:
     """
     Replacing known variables with literal values
