@@ -14,9 +14,9 @@ class _peval_function_header:
     @staticmethod
     def handle_arg(state, node, ctx, **_):
         result, gen_sym = peval_expression(node.annotation, state.gen_sym, ctx.constants)
-        new_bindings = state.new_bindings.update(result.temp_bindings)
+        new_bindings = state.new_bindings | result.temp_bindings
 
-        state = state.update(gen_sym=gen_sym, new_bindings=new_bindings)
+        state = state.with_(gen_sym=gen_sym, new_bindings=new_bindings)
         node = replace_fields(node, annotation=result.node)
 
         return state, node
@@ -33,9 +33,9 @@ class _peval_function_header:
 
         # Evaluate the return annotation
         result, gen_sym = peval_expression(node.returns, state.gen_sym, ctx.constants)
-        new_bindings = state.new_bindings.update(result.temp_bindings)
+        new_bindings = state.new_bindings | result.temp_bindings
         node = replace_fields(node, returns=result.node)
-        state = state.update(gen_sym=gen_sym, new_bindings=new_bindings)
+        state = state.with_(gen_sym=gen_sym, new_bindings=new_bindings)
 
         return state, node
 

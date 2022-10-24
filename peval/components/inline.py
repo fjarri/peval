@@ -33,7 +33,7 @@ class _inline_functions_walker:
         return_name, gen_sym = gen_sym("return")
         inlined_body, gen_sym, constants = _inline(node, gen_sym, return_name, constants)
         prepend(inlined_body)
-        new_state = state.update(gen_sym=gen_sym, constants=constants)
+        new_state = state.with_(gen_sym=gen_sym, constants=constants)
 
         return new_state, ast.Name(id=return_name, ctx=ast.Load())
 
@@ -112,9 +112,9 @@ def _handle_loop(node, state, ctx, visit_after, visiting_after, walk_field, **_)
     if not visiting_after:
         # Need to traverse fields explicitly since for the purposes of _replace_returns(),
         # the body of `orelse` field is not inside a loop.
-        state = state.update(loop_nesting_ctr=state.loop_nesting_ctr + 1)
+        state = state.with_(loop_nesting_ctr=state.loop_nesting_ctr + 1)
         state, new_body = walk_field(state, node.body, block_context=True)
-        state = state.update(loop_nesting_ctr=state.loop_nesting_ctr - 1)
+        state = state.with_(loop_nesting_ctr=state.loop_nesting_ctr - 1)
         state, new_orelse = walk_field(state, node.orelse, block_context=True)
 
         visit_after()
@@ -132,7 +132,7 @@ def _handle_loop(node, state, ctx, visit_after, visiting_after, walk_field, **_)
 
         # if we are at root level, reset the return-inside-a-loop flag
         if state.loop_nesting_ctr == 0:
-            state = state.update(return_inside_a_loop=False)
+            state = state.with_(return_inside_a_loop=False)
 
         return state, new_nodes
 
@@ -169,7 +169,7 @@ class _replace_returns_walker:
 
         new_nodes.append(ast.Break())
 
-        return state.update(state_update), new_nodes
+        return state | state_update, new_nodes
 
 
 def _replace_returns(

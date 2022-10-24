@@ -438,7 +438,7 @@ def _has_nodes(state, node, ctx, skip_fields, **_):
         return state
 
     if type(node) in ctx.node_types:
-        return state.update(nodes_found=True)
+        return state.with_(nodes_found=True)
     else:
         return state
 

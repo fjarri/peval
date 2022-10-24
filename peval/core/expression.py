@@ -69,7 +69,7 @@ def _reify_func(acc, value, create_binding):
         # the whole state, only ``gen_sym``.
         gen_sym, bindings = acc
         node, gen_sym, binding = reify(value, gen_sym, create_binding=create_binding)
-        return (gen_sym, bindings.update(binding)), node
+        return (gen_sym, bindings | binding), node
     else:
         # Should be an AST node
         return acc, value
@@ -80,7 +80,7 @@ def map_reify(state: ImmutableADict, container, create_binding: bool = False):
     acc, new_container = map_accum(_reify_func, acc, container, create_binding)
     gen_sym, bindings = acc
 
-    new_state = state.update(gen_sym=gen_sym, temp_bindings=state.temp_bindings.update(bindings))
+    new_state = state.with_(gen_sym=gen_sym, temp_bindings=state.temp_bindings | bindings)
 
     return new_state, new_container
 
@@ -209,7 +209,7 @@ def peval_binop(state: ImmutableADict, ctx: ImmutableADict, op: ast.operator, le
     func = BIN_OPS[type(op)]
     state, result = peval_call(state, ctx, func, args=[left, right])
     if not is_known_value(result):
-        state = state.update(temp_bindings=state.temp_bindings.del_(result.func.id))
+        state = state.with_(temp_bindings=state.temp_bindings.without(result.func.id))
         result = ast.BinOp(op=op, left=result.args[0], right=result.args[1])
     return state, result
 
@@ -220,7 +220,7 @@ def peval_single_compare(state: ImmutableADict, ctx: ImmutableADict, op, left, r
 
     state, result = peval_call(state, ctx, func, args=[left, right])
     if not is_known_value(result):
-        state = state.update(temp_bindings=state.temp_bindings.del_(result.func.id))
+        state = state.with_(temp_bindings=state.temp_bindings.without(result.func.id))
         result = ast.Compare(left=result.args[0], ops=[op], comparators=[result.args[1]])
     return state, result
 
@@ -362,7 +362,7 @@ def peval_comprehension(state, node, ctx):
     for name in target_names:
         if name in elt_bindings:
             del elt_bindings[name]
-    elt_ctx = ctx.update(bindings=elt_bindings)
+    elt_ctx = ctx.with_(bindings=elt_bindings)
 
     if type(node) == ast.DictComp:
         elt = ast.Tuple(elts=[node.key, node.value])
@@ -429,7 +429,7 @@ def _peval_comprehension_generators(state, generators, ctx):
     state, iter_result = _peval_expression(state, generator.iter, ctx)
 
     masked_bindings = _get_masked_bindings(generator.target, ctx.bindings)
-    masked_ctx = ctx.set("bindings", masked_bindings)
+    masked_ctx = ctx.with_(bindings=masked_bindings)
 
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
@@ -489,7 +489,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
     state, iter_result = _peval_expression(state, generator.iter, ctx)
 
     masked_bindings = _get_masked_bindings(generator.target, ctx.bindings)
-    masked_ctx = ctx.set("bindings", masked_bindings)
+    masked_ctx = ctx.with_(bindings=masked_bindings)
 
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
@@ -512,7 +512,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 
         iter_bindings = dict(ctx.bindings)
         iter_bindings.update(target_bindings)
-        iter_ctx = ctx.set("bindings", iter_bindings)
+        iter_ctx = ctx.with_(bindings=iter_bindings)
 
         state, ifs_value = _peval_expression(state, ifs_result, iter_ctx)
         if not is_known_value(ifs_value):
@@ -599,7 +599,7 @@ class _peval_expression_dispatcher:
     ):
         state, result = peval_call(state, ctx, UNARY_OPS[type(node.op)], args=[node.operand])
         if not is_known_value(result):
-            state = state.update(temp_bindings=state.temp_bindings.del_(result.func.id))
+            state = state.with_(temp_bindings=state.temp_bindings.without(result.func.id))
             result = ast.UnaryOp(op=node.op, operand=result.args[0])
         return state, result
 

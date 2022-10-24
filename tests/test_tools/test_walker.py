@@ -69,7 +69,7 @@ def test_inspector():
     @ast_inspector
     def collect_numbers(state, node, **kwds):
         if isinstance(node, ast.Num):
-            return state.update(numbers=state.numbers | {node.n})
+            return state.with_(numbers=state.numbers | {node.n})
         else:
             return state
 
@@ -82,7 +82,7 @@ def test_walk_list():
     @ast_inspector
     def collect_numbers(state, node, **kwds):
         if isinstance(node, ast.Num):
-            return state.update(numbers=state.numbers | {node.n})
+            return state.with_(numbers=state.numbers | {node.n})
         else:
             return state
 
@@ -95,7 +95,7 @@ def test_walker():
     @ast_walker
     def process_numbers(state, node, **kwds):
         if isinstance(node, ast.Num):
-            return state.update(numbers=state.numbers | {node.n}), ast.Num(n=node.n + 1)
+            return state.with_(numbers=state.numbers | {node.n}), ast.Num(n=node.n + 1)
         else:
             return state, node
 
@@ -315,11 +315,11 @@ def test_dispatched_walker():
     class collect_numbers_with_default:
         @staticmethod
         def handle_Num(state, node, **kwds):
-            return state.update(numbers=state.numbers | {node.n})
+            return state.with_(numbers=state.numbers | {node.n})
 
         @staticmethod
         def handle_Constant(state, node, **kwds):
-            return state.update(numbers=state.numbers | {node.n})
+            return state.with_(numbers=state.numbers | {node.n})
 
         @staticmethod
         def handle(state, node, **kwds):
@@ -329,11 +329,11 @@ def test_dispatched_walker():
     class collect_numbers:
         @staticmethod
         def handle_Num(state, node, **kwds):
-            return state.update(numbers=state.numbers | {node.n})
+            return state.with_(numbers=state.numbers | {node.n})
 
         @staticmethod
         def handle_Constant(state, node, **kwds):
-            return state.update(numbers=state.numbers | {node.n})
+            return state.with_(numbers=state.numbers | {node.n})
 
     node = get_ast(dummy)
 
@@ -547,9 +547,9 @@ def test_walk_field_inspect():
     def names_and_nums(state, node, walk_field, **kwds):
         if isinstance(node, ast.Assign):
             state = walk_field(state, node.value)
-            return state.update(objs=state.objs | {node.targets[0].id})
+            return state.with_(objs=state.objs | {node.targets[0].id})
         elif isinstance(node, ast.Num):
-            return state.update(objs=state.objs | {node.n})
+            return state.with_(objs=state.objs | {node.n})
         else:
             return state
 
@@ -564,10 +564,10 @@ def test_walk_field_transform_inspect():
         if isinstance(node, ast.Assign):
             state, value_node = walk_field(state, node.value)
             new_node = replace_fields(node, targets=node.targets, value=value_node)
-            new_state = state.update(objs=state.objs | {node.targets[0].id})
+            new_state = state.with_(objs=state.objs | {node.targets[0].id})
             return new_state, new_node
         elif isinstance(node, ast.Num):
-            return state.update(objs=state.objs | {node.n}), ast.Num(n=node.n + 1)
+            return state.with_(objs=state.objs | {node.n}), ast.Num(n=node.n + 1)
         else:
             return state, node
 

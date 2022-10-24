@@ -25,7 +25,7 @@ def _visit_local(
             mangled_id = mangled[node_id]
         else:
             mangled_id, gen_sym = gen_sym("mangled")
-            mangled = mangled.set(node_id, mangled_id)
+            mangled = mangled.with_item(node_id, mangled_id)
 
         if is_name:
             new_node = ast.Name(id=mangled_id, ctx=node.ctx)
@@ -47,13 +47,13 @@ class _mangle:
     @staticmethod
     def handle_arg(state, node, ctx, **_):
         gen_sym, new_node, mangled = _visit_local(state.gen_sym, node, ctx.fn_locals, state.mangled)
-        new_state = state.update(gen_sym=gen_sym, mangled=mangled)
+        new_state = state.with_(gen_sym=gen_sym, mangled=mangled)
         return new_state, new_node
 
     @staticmethod
     def handle_Name(state, node, ctx, **_):
         gen_sym, new_node, mangled = _visit_local(state.gen_sym, node, ctx.fn_locals, state.mangled)
-        new_state = state.update(gen_sym=gen_sym, mangled=mangled)
+        new_state = state.with_(gen_sym=gen_sym, mangled=mangled)
         return new_state, new_node
 
 

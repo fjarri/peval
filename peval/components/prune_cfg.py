@@ -79,15 +79,15 @@ class _find_jumps:
 
     @staticmethod
     def handle_Break(state, **_):
-        return state.update(jumps_counter=state.jumps_counter + 1)
+        return state.with_(jumps_counter=state.jumps_counter + 1)
 
     @staticmethod
     def handle_Raise(state, **_):
-        return state.update(jumps_counter=state.jumps_counter + 1)
+        return state.with_(jumps_counter=state.jumps_counter + 1)
 
     @staticmethod
     def handle_Return(state, **_):
-        return state.update(jumps_counter=state.jumps_counter + 1)
+        return state.with_(jumps_counter=state.jumps_counter + 1)
 
 
 def find_jumps(node: List[ast.AST]) -> int:

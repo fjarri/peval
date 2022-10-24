@@ -5,12 +5,19 @@ The classes in this module have the prefix 'immutable' to avoid confusion
 with the built-in ``frozenset``, which does not have any modification methods,
 even pure ones.
 """
-from typing import Any
+from typing import Any, TypeVar, Mapping, Iterator
 
 
-class ImmutableDict(dict):
+_Key = TypeVar("_Key")
+_Val = TypeVar("_Val")
+
+
+class ImmutableDict(Mapping[_Key, _Val]):
     """
     An immutable version of ``dict``.
+
+    TODO: switch to `frozendict` when it fixes its typing problems
+    (see https://github.com/Marco-Sulla/python-frozendict/issues/39)
 
     Mutating syntax (``del d[k]``, ``d[k] = v``) is prohibited,
     pure methods ``del_`` and ``set`` are available instead.
@@ -21,93 +28,62 @@ class ImmutableDict(dict):
     the source dictionary itself is returned as the new dictionary.
     """
 
-    def clear(self):
-        return self.__class__()
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._dict = dict(*args, **kwargs)
 
-    def copy(self):
-        return self
+    def __getitem__(self, key: object) -> _Val:
+        return self._dict[key]
 
-    def pop(self, *args):
-        new_dict = self.__class__(self)
-        value = dict.pop(new_dict, *args)
-        return value, new_dict
+    def __contains__(self, key: object) -> bool:
+        return key in self._dict
 
-    def popitem(self):
-        new_dict = self.__class__(self)
-        value = dict.popitem(new_dict)
-        return value, new_dict
+    def __iter__(self) -> Iterator[_Key]:
+        return iter(self._dict)
 
-    def setdefault(self, *args):
-        key = args[0]
-        if key not in self:
-            new_dict = self.__class__(self)
-            value = dict.setdefault(new_dict, *args)
-            return value, new_dict
-        else:
-            return self[key], self
+    def __len__(self) -> int:
+        return len(self._dict)
 
-    def __delitem__(self, key):
-        raise AttributeError("Item deletion syntax is not available for an immutable dict")
+    def __or__(self, other: Mapping[_Key, _Val]) -> "ImmutableDict[_Key, _Val]":
+        new = dict(self._dict)
+        new.update(other)
+        return self.__class__(new)
 
-    def del_(self, key: str) -> "ImmutableADict":
-        if key in self:
-            new_dict = self.__class__(self)
-            dict.__delitem__(new_dict, key)
-            return new_dict
-        else:
+    def with_item(self, key: _Key, val: _Val) -> "ImmutableDict[_Key, _Val]":
+        if key in self._dict and self._dict[key] is val:
             return self
+        new = dict(self._dict)
+        new[key] = val
+        return self.__class__(new)
 
-    def __setitem__(self, key, item):
-        raise AttributeError("Item assignment syntax is not available for an immutable dict")
-
-    def set(self, key: str, value: Any) -> "ImmutableDict":
-        if key in self and self[key] is value:
-            return self
-        else:
-            new_dict = self.__class__(self)
-            dict.__setitem__(new_dict, key, value)
-            return new_dict
-
-    def update(self, *args, **kwds) -> "ImmutableDict":
-
-        if len(kwds) == 0 and len(args) == 0:
-            return self
-
-        if len(args) > 0:
-            if isinstance(args[0], dict):
-                new_vals = args[0]
-            else:
-                new_vals = dict(args)
-        else:
-            new_vals = {}
-
-        new_vals.update(kwds)
-
-        for kwd, value in new_vals.items():
-            if self.get(kwd, None) is not value:
-                break
-        else:
-            return self
-
-        new_dict = self.__class__(self)
-        dict.update(new_dict, new_vals)
-        return new_dict
+    def without(self, key: _Key) -> "ImmutableDict[_Key, _Val]":
+        new = dict(self._dict)
+        del new[key]
+        return self.__class__(new)
 
     def __repr__(self):
-        return "ImmutableDict(" + dict.__repr__(self) + ")"
+        return f"ImmutableDict({repr(self._dict)})"
 
 
-class ImmutableADict(ImmutableDict):
+class ImmutableADict(ImmutableDict[str, _Val]):
     """
     A subclass of ``ImmutableDict`` with values being accessible as attributes
     (e.g. ``d['a']`` is equivalent to ``d.a``).
     """
 
-    def __getattr__(self, attr: str) -> Any:
-        return self[attr]
+    def __getattr__(self, attr: str) -> _Val:
+        return self._dict[attr]
 
-    def __setattr__(self, attr, value):
-        raise AttributeError("Attribute assignment syntax is not available for an immutable dict")
+    def with_(self, **kwds: Mapping[str, _Val]) -> "ImmutableADict[_Val]":
+        # TODO: need to think this over again.
+        # In some places we check if the dicts were updated or not with `is`,
+        # to avoid a lengthy equality check.
+        # But e.g. equal strings are not guaranteed to be the same object in Python.
+        # Is this fine?
+        if all(key in self._dict and self._dict[key] is val for key, val in kwds.items()):
+            return self
+        new = dict(self._dict)
+        new.update(**kwds)
+        return self.__class__(new)
 
     def __repr__(self):
-        return "ImmutableADict(" + dict.__repr__(self) + ")"
+        return f"ImmutableADict({repr(self._dict)})"
