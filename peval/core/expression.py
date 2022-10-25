@@ -5,8 +5,7 @@ from typing import Tuple
 from peval.tools import Dispatcher, ImmutableADict, ast_equal, replace_fields
 from peval.core.gensym import GenSym
 from peval.core.reify import KnownValue, is_known_value, reify
-from peval.wisdom import is_pure, get_signature
-from peval.core.callable import inspect_callable
+from peval.wisdom import is_pure_callable
 from peval.typing import ConstsDictT
 from peval.tools import ImmutableDict, fold_and, map_accum
 from peval.tags import pure
@@ -104,24 +103,7 @@ def all_known_values_or_none(container) -> bool:
 
 def try_call(obj, args=(), kwds={}):
     # The only entry point for function calls.
-    callable_ = inspect_callable(obj)
-
-    if callable_.self_obj is not None:
-        args = (callable_.self_obj,) + args
-    obj = callable_.func_obj
-
-    if not is_pure(obj):
-        return False, None
-
-    try:
-        sig = get_signature(obj)
-    except ValueError:
-        return False, None
-
-    try:
-        sig.bind(*args, **kwds)
-    except TypeError:
-        # binding failed
+    if not is_pure_callable(obj):
         return False, None
 
     try:

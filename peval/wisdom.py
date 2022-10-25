@@ -2,68 +2,81 @@ import operator
 import inspect
 import builtins
 from typing import Callable
+import types
 
 from peval.tags import get_pure_tag
 
 
-_KNOWN_SIGNATURES = {
-    bool: inspect.signature(lambda obj: None),
-    isinstance: inspect.signature(lambda obj, tp: None),
-    getattr: inspect.signature(lambda obj, name, default=None: None),
-    iter: inspect.signature(lambda obj: None),
-    str.__getitem__: inspect.signature(lambda self, index: None),
-    range: inspect.signature(lambda *args: None),
-    repr: inspect.signature(lambda *obj: None),
-    operator.pos: inspect.signature(lambda a: None),
-    operator.neg: inspect.signature(lambda a: None),
-    operator.not_: inspect.signature(lambda a: None),
-    operator.invert: inspect.signature(lambda a: None),
-    operator.add: inspect.signature(lambda a, b: None),
-    operator.sub: inspect.signature(lambda a, b: None),
-    operator.mul: inspect.signature(lambda a, b: None),
-    operator.truediv: inspect.signature(lambda a, b: None),
-    operator.floordiv: inspect.signature(lambda a, b: None),
-    operator.mod: inspect.signature(lambda a, b: None),
-    operator.pow: inspect.signature(lambda a, b: None),
-    operator.lshift: inspect.signature(lambda a, b: None),
-    operator.rshift: inspect.signature(lambda a, b: None),
-    operator.or_: inspect.signature(lambda a, b: None),
-    operator.xor: inspect.signature(lambda a, b: None),
-    operator.and_: inspect.signature(lambda a, b: None),
-    operator.eq: inspect.signature(lambda a, b: None),
-    operator.ne: inspect.signature(lambda a, b: None),
-    operator.lt: inspect.signature(lambda a, b: None),
-    operator.le: inspect.signature(lambda a, b: None),
-    operator.gt: inspect.signature(lambda a, b: None),
-    operator.ge: inspect.signature(lambda a, b: None),
-    operator.is_: inspect.signature(lambda a, b: None),
-    operator.is_not: inspect.signature(lambda a, b: None),
+_KNOWN_OPERATORS = {
+    operator.pos,
+    operator.neg,
+    operator.not_,
+    operator.invert,
+    operator.add,
+    operator.sub,
+    operator.mul,
+    operator.truediv,
+    operator.floordiv,
+    operator.mod,
+    operator.pow,
+    operator.lshift,
+    operator.rshift,
+    operator.or_,
+    operator.xor,
+    operator.and_,
+    operator.eq,
+    operator.ne,
+    operator.lt,
+    operator.le,
+    operator.gt,
+    operator.ge,
+    operator.is_,
+    operator.is_not,
 }
 
-
-_BUILTIN_CALLABLES = set(
-    getattr(builtins, name) for name in dir(builtins) if callable(getattr(builtins, name))
-)
-_BUILTIN_PURE_CALLABLES = _BUILTIN_CALLABLES.difference(
-    [delattr, setattr, eval, exec, input, print, next, open]
-)
-
-
-def get_signature(func: Callable) -> inspect.Signature:
-    # built-in functions and operators in CPython cannot be inspected,
-    # so we use a predefined signature
-    if func in _KNOWN_SIGNATURES:
-        return _KNOWN_SIGNATURES[func]
-
-    return inspect.signature(func)
+_IMPURE_BUILTINS = {delattr, setattr, eval, exec, input, print, next, open}
+_BUILTIN_PURE_CALLABLES = _KNOWN_OPERATORS
+for name in dir(builtins):
+    builtin = getattr(builtins, name)
+    if type(builtin) == type:
+        _BUILTIN_PURE_CALLABLES.add(builtin.__init__)
+    elif callable(builtin) and builtin not in _IMPURE_BUILTINS:
+        _BUILTIN_PURE_CALLABLES.add(builtin)
+for tp in (int, float, str, bytes, bool):
+    for name in dir(tp):
+        method = getattr(tp, name)
+        if callable(method):
+            _BUILTIN_PURE_CALLABLES.add(method)
 
 
-def is_pure(func: Callable) -> bool:
-    pure_tag = get_pure_tag(func)
+def is_pure_callable(callable_) -> bool:
+
+    if type(callable_) == type:
+        # A regular class or a builtin type
+        unbound_callable = callable_.__init__
+    elif type(callable_) == types.FunctionType:
+        unbound_callable = callable_
+    elif type(callable_) == types.BuiltinFunctionType:
+        # A builtin function (e.g. `isinstance`)
+        unbound_callable = callable_
+    elif type(callable_) == types.WrapperDescriptorType:
+        # An unbound method of some builtin classes (e.g. `str.__getitem__`)
+        unbound_callable = callable_
+    elif type(callable_) == types.MethodWrapperType:
+        # An bound method of some builtin classes (e.g. `"a".__getitem__`)
+        unbound_callable = getattr(callable_.__objclass__, callable_.__name__)
+    elif type(callable_) == types.MethodType:
+        unbound_callable = callable_.__func__
+    elif hasattr(callable_, "__call__") and callable(callable_.__call__):
+        unbound_callable = callable_.__call__
+    else:
+        return False
+
+    if unbound_callable in _BUILTIN_PURE_CALLABLES:
+        return True
+
+    pure_tag = get_pure_tag(unbound_callable)
     if pure_tag is not None:
         return pure_tag
-
-    if func in _BUILTIN_PURE_CALLABLES or func in _KNOWN_SIGNATURES:
-        return True
 
     return False

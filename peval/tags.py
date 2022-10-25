@@ -6,6 +6,9 @@ from peval.core.function import Function, has_nested_definitions, is_a_generator
 def pure(func: Callable) -> Callable:
     """
     Marks the function as pure (not having any side effects, except maybe argument mutation).
+
+    Note that for class- and staticmethods ``@pure`` must be declared
+    within the corresponding decorator.
     """
     func.__peval_pure__ = True
     return func
