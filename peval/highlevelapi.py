@@ -20,7 +20,7 @@ def _run_components(tree: AST, constants: ConstsDictT) -> PassOutputT:
         new_tree = tree
         new_constants = constants
 
-        for func in (inline_functions, fold, prune_cfg, prune_assignments):
+        for func in (fold, prune_cfg, prune_assignments, inline_functions):
             new_tree, new_constants = func(new_tree, new_constants)
 
         if ast_equal(new_tree, tree) and new_constants == constants:
