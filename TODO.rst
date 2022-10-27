@@ -1,5 +1,7 @@
 First issues:
 
+- Support all operations from https://docs.python.org/3/reference/datamodel.html, by properly converting sugared calls into dunder methods before evaluating.
+
 - Convert TODO and License to Markdown, remove TODO from github?
 
 - in `test_callable` remove things related to inheritance from `(object)`

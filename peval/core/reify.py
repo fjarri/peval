@@ -41,6 +41,7 @@ def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool = False) -> 
 
     value = kvalue.value
 
+    # TODO: add a separate reify_constant() method that guarantees not to change the bindings
     if value is True or value is False or value is None:
         return ast.Constant(value=value, kind=None), gen_sym, {}
     elif type(value) == str:

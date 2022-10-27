@@ -401,8 +401,8 @@ def test_list_comprehension():
     check_peval_expression(
         "[x + 1 for x in range(a)]",
         dict(a=10, range=range),
-        "__peval_temp_2",
-        expected_temp_bindings=dict(__peval_temp_2=list(range(1, 11))),
+        "__peval_temp_1",
+        expected_temp_bindings=dict(__peval_temp_1=list(range(1, 11))),
         fully_evaluated=True,
         expected_value=list(range(1, 11)),
     )
@@ -411,8 +411,8 @@ def test_list_comprehension():
     check_peval_expression(
         "[x + y for x, y in [(1, 2), (2, 3)]]",
         dict(a=10, range=range, zip=zip),
-        "__peval_temp_2",
-        expected_temp_bindings=dict(__peval_temp_2=[3, 5]),
+        "__peval_temp_1",
+        expected_temp_bindings=dict(__peval_temp_1=[3, 5]),
         fully_evaluated=True,
         expected_value=[3, 5],
     )
@@ -422,8 +422,8 @@ def test_set_comprehension():
     check_peval_expression(
         "{x + 1 for x in range(a)}",
         dict(a=10, range=range),
-        "__peval_temp_2",
-        expected_temp_bindings=dict(__peval_temp_2=set(range(1, 11))),
+        "__peval_temp_1",
+        expected_temp_bindings=dict(__peval_temp_1=set(range(1, 11))),
         fully_evaluated=True,
         expected_value=set(range(1, 11)),
     )
@@ -434,8 +434,8 @@ def test_dict_comprehension():
     check_peval_expression(
         "{x+1:x+2 for x in range(a)}",
         dict(a=2, range=range),
-        "__peval_temp_3",
-        expected_temp_bindings=dict(__peval_temp_3={1: 2, 2: 3}),
+        "__peval_temp_1",
+        expected_temp_bindings=dict(__peval_temp_1={1: 2, 2: 3}),
         fully_evaluated=True,
         expected_value={1: 2, 2: 3},
     )
@@ -448,7 +448,7 @@ def test_generator_exp():
     # without changing their state.
 
     source_tree = expression_ast("(x + 1 for x in range(a))")
-    expected_tree = expression_ast("__peval_temp_2")
+    expected_tree = expression_ast("__peval_temp_1")
     bindings = dict(a=10, range=range)
 
     gen_sym = GenSym()
@@ -471,8 +471,8 @@ def test_generator_exp():
 
     expected_genexp = (x + 1 for x in range(10))
 
-    assert "__peval_temp_2" in result.temp_bindings
-    binding = result.temp_bindings["__peval_temp_2"]
+    assert "__peval_temp_1" in result.temp_bindings
+    binding = result.temp_bindings["__peval_temp_1"]
     assert type(binding) == type(expected_genexp)
     assert list(binding) == list(expected_genexp)
 

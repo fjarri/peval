@@ -12,54 +12,40 @@ from peval.tags import pure
 from peval.tools.immutable import ImmutableADict, ImmutableADict
 
 
-UNARY_OPS = {
-    ast.UAdd: KnownValue(operator.pos),
-    ast.USub: KnownValue(operator.neg),
-    ast.Not: KnownValue(operator.not_),
-    ast.Invert: KnownValue(operator.invert),
+UNARY_OPS_NAMES = {
+    ast.UAdd: "__pos__",
+    ast.USub: "__neg__",
+    ast.Invert: "__invert__",
 }
 
-BIN_OPS = {
-    ast.Add: KnownValue(operator.add),
-    ast.Sub: KnownValue(operator.sub),
-    ast.Mult: KnownValue(operator.mul),
-    ast.Div: KnownValue(operator.truediv),
-    ast.FloorDiv: KnownValue(operator.floordiv),
-    ast.Mod: KnownValue(operator.mod),
-    ast.Pow: KnownValue(operator.pow),
-    ast.LShift: KnownValue(operator.lshift),
-    ast.RShift: KnownValue(operator.rshift),
-    ast.BitOr: KnownValue(operator.or_),
-    ast.BitXor: KnownValue(operator.xor),
-    ast.BitAnd: KnownValue(operator.and_),
+BIN_OPS_NAMES = {
+    ast.Add: ("__add__", "__radd__"),
+    ast.Sub: ("__sub__", "__rsub__"),
+    ast.Mult: ("__mul__", "__rmul__"),
+    ast.Div: ("__truediv__", "__rtruediv__"),
+    ast.FloorDiv: ("__floordiv__", "__rfloordiv__"),
+    ast.Mod: ("__mod__", "__rmod__"),
+    ast.Pow: ("__pow__", "__rpow__"),
+    ast.LShift: ("__lshift__", "__rlshift__"),
+    ast.RShift: ("__rshift__", "__rrshift__"),
+    ast.BitOr: ("__or__", "__ror__"),
+    ast.BitXor: ("__xor__", "__rxor__"),
+    ast.BitAnd: ("__and__", "__rand__"),
 }
 
-# Wrapping ``contains``, because its parameters
-# do not follow the pattern (left operand, right operand).
+COMPARE_OPS_NAMES = {
+    ast.Eq: "__eq__",
+    ast.NotEq: "__ne__",
+    ast.Lt: "__lt__",
+    ast.LtE: "__le__",
+    ast.Gt: "__gt__",
+    ast.GtE: "__ge__",
+}
 
 
 @pure
-def in_(x, y):
-    return operator.contains(y, x)
-
-
-@pure
-def not_in(x, y):
-    return not operator.contains(y, x)
-
-
-COMPARE_OPS = {
-    ast.Eq: KnownValue(operator.eq),
-    ast.NotEq: KnownValue(operator.ne),
-    ast.Lt: KnownValue(operator.lt),
-    ast.LtE: KnownValue(operator.le),
-    ast.Gt: KnownValue(operator.gt),
-    ast.GtE: KnownValue(operator.ge),
-    ast.Is: KnownValue(operator.is_),
-    ast.IsNot: KnownValue(operator.is_not),
-    ast.In: KnownValue(in_),
-    ast.NotIn: KnownValue(not_in),
-}
+def not_(val):
+    return not val
 
 
 def _reify_func(acc, value, create_binding):
@@ -108,7 +94,7 @@ def try_call(obj, args=(), kwds={}):
 
     try:
         value = obj(*args, **kwds)
-    except Exception:
+    except Exception as exc:
         return False, None
 
     return True, value
@@ -150,6 +136,8 @@ def peval_call(state, ctx, func, args=[], keywords=[]):
         ast.keyword(arg=kw.arg, value=expr) for kw, expr in zip(keywords, nodes["keywords"])
     ]
 
+    # TODO: why are we returning a new node?
+    # Should't we start from passing a `Call` to this function?
     return state, ast.Call(**nodes)
 
 
@@ -169,7 +157,8 @@ def peval_boolop(state: ImmutableADict, ctx: ImmutableADict, op, values):
 
         # Short circuit
         if is_known_value(new_value):
-            success, bool_value = try_call(bool, args=(new_value.value,))
+            success, bool_value = try_call_method(new_value.value, "__bool__")
+            # TODO: the following may raise an exception if __bool__() returns something weird.
             short_circuit_applicable = success and (
                 (type(op) == ast.And and not bool_value) or (type(op) == ast.Or and bool_value)
             )
@@ -188,23 +177,82 @@ def peval_boolop(state: ImmutableADict, ctx: ImmutableADict, op, values):
 
 
 def peval_binop(state: ImmutableADict, ctx: ImmutableADict, op: ast.operator, left, right):
-    func = BIN_OPS[type(op)]
-    state, result = peval_call(state, ctx, func, args=[left, right])
-    if not is_known_value(result):
-        state = state.with_(temp_bindings=state.temp_bindings.without(result.func.id))
-        result = ast.BinOp(op=op, left=result.args[0], right=result.args[1])
-    return state, result
+
+    state, (peval_left, peval_right) = map_peval_expression(state, [left, right], ctx)
+    unevaled_state, [unevaled_left, unevaled_right] = map_reify(state, [peval_left, peval_right])
+    unevaled_node = ast.BinOp(op=op, left=unevaled_left, right=unevaled_right)
+    if not is_known_value(peval_left) or not is_known_value(peval_right):
+        return unevaled_state, unevaled_node
+
+    attr, rattr = BIN_OPS_NAMES[type(op)]
+
+    lval = peval_left.value
+    rval = peval_right.value
+
+    if hasattr(lval, attr):
+        success, result = try_call_method(lval, attr, [rval])
+        if not success:
+            return unevaled_state, unevaled_node
+        if result is not NotImplemented:
+            return state, KnownValue(result)
+
+    if hasattr(rval, rattr):
+        success, result = try_call_method(rval, rattr, [lval])
+        if not success:
+            return unevaled_state, unevaled_node
+        if result is not NotImplemented:
+            return state, KnownValue(result)
+
+    return unevaled_state, unevaled_node
 
 
 def peval_single_compare(state: ImmutableADict, ctx: ImmutableADict, op, left, right):
 
-    func = COMPARE_OPS[type(op)]
+    state, (peval_left, peval_right) = map_peval_expression(state, [left, right], ctx)
+    unevaled_state, [unevaled_left, unevaled_right] = map_reify(state, [peval_left, peval_right])
+    unevaled_node = ast.Compare(ops=[op], left=unevaled_left, comparators=[unevaled_right])
+    if not is_known_value(peval_left) or not is_known_value(peval_right):
+        return unevaled_state, unevaled_node
 
-    state, result = peval_call(state, ctx, func, args=[left, right])
-    if not is_known_value(result):
-        state = state.with_(temp_bindings=state.temp_bindings.without(result.func.id))
-        result = ast.Compare(left=result.args[0], ops=[op], comparators=[result.args[1]])
-    return state, result
+    lval = peval_left.value
+    rval = peval_right.value
+
+    if type(op) in COMPARE_OPS_NAMES:
+        attr = COMPARE_OPS_NAMES[type(op)]
+        success, result = try_call_method(lval, attr, [rval])
+        if not success:
+            return unevaled_state, unevaled_node
+
+    # These nodes will require a special approach
+    # since they are not just desugared to a dunder method call.
+
+    elif type(op) == ast.Is:
+        result = lval is rval
+
+    elif type(op) == ast.IsNot:
+        result = lval is not rval
+
+    elif type(op) == ast.In:
+        # TODO: Python also calls __iter__ and then __getitem__ if __contains__ is not present.
+        success, result = try_call_method(rval, "__contains__", [lval])
+        if not success:
+            return unevaled_state, unevaled_node
+        success, result = try_call_method(result, "__bool__")
+        if not success:
+            return unevaled_state, unevaled_node
+
+    elif type(op) == ast.NotIn:
+        success, result = try_call_method(rval, "__contains__", [lval])
+        if not success:
+            return unevaled_state, unevaled_node
+        success, result = try_call_method(result, "__bool__")
+        if not success:
+            return unevaled_state, unevaled_node
+        success, result = try_call(not_, [result])
+        if not success:
+            return unevaled_state, unevaled_node
+
+    return state, KnownValue(result)
 
 
 def peval_compare(state: ImmutableADict, ctx: ImmutableADict, node: ast.Compare):
@@ -416,7 +464,7 @@ def _peval_comprehension_generators(state, generators, ctx):
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
     if is_known_value(ifs_result):
-        success, bool_value = try_call(bool, args=(ifs_result.value,))
+        success, bool_value = try_call_method(ifs_result.value, "__bool__")
         if success and bool_value:
             ifs_result = []
 
@@ -438,7 +486,7 @@ def _try_unpack_sequence(seq, node):
         if not all(type(elt) == ast.Name for elt in node.elts):
             return False, None
         bindings = {}
-        success, it = try_call(iter, args=(seq,))
+        success, it = try_call_method(seq, "__iter__")
         if not success:
             return False, None
 
@@ -477,7 +525,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 
     if is_known_value(iter_result):
         iterable = iter_result.value
-        iterator_evaluated, iterator = try_call(iter, args=(iterable,))
+        iterator_evaluated, iterator = try_call_method(iterable, "__iter__")
     else:
         iterator_evaluated = False
 
@@ -500,7 +548,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
         if not is_known_value(ifs_value):
             raise CannotEvaluateComprehension
 
-        success, bool_value = try_call(bool, args=(ifs_value.value,))
+        success, bool_value = try_call_method(ifs_value.value, "__bool__")
         if not success:
             raise CannotEvaluateComprehension
         if success and not bool_value:
@@ -579,10 +627,31 @@ class _peval_expression_dispatcher:
         node: ast.UnaryOp,
         ctx: ImmutableADict,
     ):
-        state, result = peval_call(state, ctx, UNARY_OPS[type(node.op)], args=[node.operand])
-        if not is_known_value(result):
-            state = state.with_(temp_bindings=state.temp_bindings.without(result.func.id))
-            result = ast.UnaryOp(op=node.op, operand=result.args[0])
+        state, peval_node = _peval_expression(state, node.operand, ctx)
+        unevaled_state, unevaled_node = map_reify(state, peval_node)
+        unevaled_result = ast.UnaryOp(op=node.op, operand=unevaled_node)
+        if not is_known_value(peval_node):
+            return unevaled_state, unevaled_result
+
+        if type(node.op) == ast.Not:
+            # A special case since it cannot be translated to a single method call.
+            # So we're reusing the rest of the method as if it was a `bool()` call,
+            # with some post-processing afterwards.
+            attr = "__bool__"
+        else:
+            attr = UNARY_OPS_NAMES[type(node.op)]
+
+        success, result = try_call_method(peval_node.value, attr)
+        if not success:
+            return unevaled_state, unevaled_result
+
+        if type(node.op) == ast.Not:
+            success, result = try_call(not_, [result])
+            if not success:
+                return unevaled_state, unevaled_result
+
+        result = KnownValue(result)
+
         return state, result
 
     @staticmethod
@@ -597,7 +666,7 @@ class _peval_expression_dispatcher:
     def handle_IfExp(state: ImmutableDict, node: ast.IfExp, ctx: ImmutableADict):
         state, test_value = _peval_expression(state, node.test, ctx)
         if is_known_value(test_value):
-            success, bool_value = try_call(bool, args=(test_value.value,))
+            success, bool_value = try_call_method(test_value.value, "__bool__")
             if success:
                 taken_node = node.body if bool_value else node.orelse
                 return _peval_expression(state, taken_node, ctx)
