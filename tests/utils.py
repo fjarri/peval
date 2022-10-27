@@ -2,11 +2,29 @@ from __future__ import print_function
 
 import ast
 import difflib
+from ast import dump
 
-from astunparse import unparse, dump
-
-from peval.tools import unindent, ast_equal
+from peval.tools import ast_equal, unindent
 from peval.core.function import Function
+
+try:
+    # raise ImportError
+    from ast import fix_missing_locations
+    from ast import unparse as _unparse
+except ImportError:
+    from astunparse import unparse
+
+    def _if_expr(a, b):
+        return "if (" + str(a) + " > " + str(b) + "):"
+
+else:
+
+    def _if_expr(a, b):
+        return "if " + str(a) + " > " + str(b) + ":"
+
+    def unparse(n):
+        fix_missing_locations(n)
+        return _unparse(n)
 
 
 def normalize_source(source):

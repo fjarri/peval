@@ -1,8 +1,6 @@
 import ast
 import copy
 import sys
-
-import astunparse
 import inspect
 
 from peval.core.function import Function
@@ -315,15 +313,26 @@ def test_get_source():
     function = Function.from_object(sample_fn)
     source = normalize_source(function.get_source())
 
-    expected_source = unindent(
-        """
-        def sample_fn(x, y, foo='bar', **kw):
-            if (foo == 'bar'):
-                return (x + y)
-            else:
-                return kw['zzz']
-        """
-    )
+    if "unparse" in ast.__dict__ or "astor" in sys.modules:
+        expected_source = unindent(
+            """
+            def sample_fn(x, y, foo='bar', **kw):
+                if foo == 'bar':
+                    return x + y
+                else:
+                    return kw['zzz']
+            """
+        )
+    else:
+        expected_source = unindent(
+            """
+            def sample_fn(x, y, foo='bar', **kw):
+                if (foo == 'bar'):
+                    return (x + y)
+                else:
+                    return kw['zzz']
+            """
+        )
 
     assert source == expected_source
 

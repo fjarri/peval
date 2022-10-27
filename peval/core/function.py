@@ -10,8 +10,6 @@ from types import FunctionType
 from collections import OrderedDict
 from typing import Union, Optional, Callable, List, Iterable, Set
 
-import astunparse
-
 from peval.tools import unindent, replace_fields, ImmutableADict, ast_inspector, ast_transformer
 from peval.core.gensym import GenSym
 from peval.core.reify import reify_unwrapped
@@ -267,7 +265,18 @@ class Function:
         """
         Generates the function's source code based on its tree.
         """
-        return astunparse.unparse(self.tree)
+
+        try:
+            from ast import unparse
+        except ImportError:
+            try:
+                from astunparse import unparse
+            except ImportError:
+                from astor import to_source as unparse
+        else:
+            ast.fix_missing_locations(self.tree)
+
+        return unparse(self.tree)
 
     @classmethod
     def from_object(cls, func: Callable, ignore_decorators: bool = False) -> "Function":
