@@ -51,7 +51,7 @@ def test_if_false_elimination():
     Eliminate if test, when test is false
     """
 
-    class Falsy(object):
+    class Falsy:
         def __bool__(self):
             # For Python 3
             return False

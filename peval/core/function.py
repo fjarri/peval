@@ -209,7 +209,7 @@ def parse_annotations(node, **_):
     return node
 
 
-class Function(object):
+class Function:
     """
     A wrapper for functions providing transformations to and from AST
     and simplifying operations with associated global and closure variables.

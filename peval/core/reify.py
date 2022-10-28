@@ -11,7 +11,7 @@ FALSE_NODE = ast.Constant(value=False, kind=None)
 TRUE_NODE = ast.Constant(value=True, kind=None)
 
 
-class KnownValue(object):
+class KnownValue:
     def __init__(self, value: Any, preferred_name: Optional[str] = None) -> None:
         self.value = value
         self.preferred_name = preferred_name

@@ -4,8 +4,6 @@ First issues:
 
 - Convert TODO and License to Markdown, remove TODO from github?
 
-- in `test_callable` remove things related to inheritance from `(object)`
-
 - why does `forward_transfer()` returns lists of one element?
 
 - why are we calling `map_reify()` on something that is always a single element and not a container in `peval_expression()`?
