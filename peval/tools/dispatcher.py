@@ -1,16 +1,15 @@
 import ast
 import types
-from typing import Tuple, Callable, Optional
+from typing import Tuple, Callable, Optional, Generic, TypeVar, Any, Dict, Type, cast
+from typing_extensions import ParamSpec, Concatenate
 
 from .immutable import ImmutableDict
 
-StateT = ImmutableDict
-ContextT = ImmutableDict
-HandlerResultT = Tuple[StateT, ast.AST]
-HandlerT = Callable[[StateT, ast.AST, ContextT], HandlerResultT]
+_Params = ParamSpec("_Params")
+_Return = TypeVar("_Return")
 
 
-class Dispatcher:
+class Dispatcher(Generic[_Params, _Return]):
     """
     A dispatcher that maps a call to a group of functions
     based on the type of the first argument
@@ -38,20 +37,23 @@ class Dispatcher:
     a ``ValueError`` is thrown.
     """
 
-    def __init__(self, handler_obj: HandlerT, default_handler: Optional[HandlerT] = None) -> None:
+    def __init__(
+        self, handler_obj: Any, default_handler: Optional[Callable[_Params, _Return]] = None
+    ):
+        self._handlers: Dict[Type[ast.AST], Callable[_Params, _Return]] = {}
         if isinstance(handler_obj, types.FunctionType):
-            self._handlers = {}
-            self._default_handler = handler_obj
+            self._default_handler = cast(Callable[_Params, _Return], handler_obj)
         else:
             handler_prefix = "handle"
             if hasattr(handler_obj, handler_prefix):
-                self._default_handler = getattr(handler_obj, handler_prefix)
+                self._default_handler = cast(
+                    Callable[_Params, _Return], getattr(handler_obj, handler_prefix)
+                )
             elif default_handler is not None:
                 self._default_handler = default_handler
             else:
                 raise ValueError("Default handler was not provided")
 
-            self._handlers = {}
             attr_prefix = handler_prefix + "_"
             for attr in vars(handler_obj):
                 if attr.startswith(attr_prefix):
@@ -59,6 +61,8 @@ class Dispatcher:
                     if hasattr(ast, typename):
                         self._handlers[getattr(ast, typename)] = getattr(handler_obj, attr)
 
-    def __call__(self, dispatch_node, *args, **kwds):
+    def __call__(
+        self, dispatch_node: ast.AST, *args: _Params.args, **kwargs: _Params.kwargs
+    ) -> _Return:
         handler = self._handlers.get(type(dispatch_node), self._default_handler)
-        return handler(*args, **kwds)
+        return handler(*args, **kwargs)

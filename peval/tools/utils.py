@@ -1,6 +1,7 @@
 import ast
 import re
-from typing import Callable, Any, Iterable, Tuple
+from typing import Callable, Any, Iterable, Tuple, Sequence, Union, TypeVar, List, Dict, cast
+from typing_extensions import ParamSpec, Concatenate
 
 
 def unindent(source: str) -> str:
@@ -8,7 +9,8 @@ def unindent(source: str) -> str:
     Shift source to the left so that it starts with zero indentation.
     """
     source = source.rstrip("\n ").lstrip("\n")
-    indent = re.match(r"([ \t])*", source).group(0)
+    # Casting to Match here because this particular regex always matches
+    indent = cast(re.Match, re.match(r"([ \t])*", source)).group(0)
     lines = source.split("\n")
     shifted_lines = []
     for line in lines:
@@ -36,26 +38,22 @@ def replace_fields(node: ast.AST, **kwds) -> ast.AST:
     return type(node)(**new_kwds)
 
 
-def ast_equal(node1: ast.AST, node2: ast.AST) -> bool:
-    """
-    Test two AST nodes or two lists of AST nodes for equality.
-    """
+def _ast_equal(node1: Any, node2: Any):
     if node1 is node2:
         return True
 
     if type(node1) != type(node2):
         return False
-
-    if type(node1) == list:
+    if isinstance(node1, list):
         if len(node1) != len(node2):
             return False
         for elem1, elem2 in zip(node1, node2):
-            if not ast_equal(elem1, elem2):
+            if not _ast_equal(elem1, elem2):
                 return False
     elif isinstance(node1, ast.AST):
         for attr, value1 in ast.iter_fields(node1):
             value2 = getattr(node2, attr)
-            if not ast_equal(value1, value2):
+            if not _ast_equal(value1, value2):
                 return False
     else:
         if node1 != node2:
@@ -64,28 +62,50 @@ def ast_equal(node1: ast.AST, node2: ast.AST) -> bool:
     return True
 
 
-def map_accum(func: Callable, acc: Any, container: Iterable, *args) -> Tuple[Any, Iterable]:
+def ast_equal(node1: ast.AST, node2: ast.AST) -> bool:
+    """
+    Test two AST nodes or two lists of AST nodes for equality.
+    """
+    # Type-gating it to make sure it's applied to AST nodes only.
+    return _ast_equal(node1, node2)
+
+
+_Accum = TypeVar("_Accum")
+_Elem = TypeVar("_Elem")
+_Container = TypeVar("_Container")
+_Params = ParamSpec("_Params")
+
+
+def map_accum(
+    func: Callable[Concatenate[_Accum, _Elem, _Params], Tuple[_Accum, _Elem]],
+    acc: _Accum,
+    container: _Container,
+    *args: _Params.args,
+    **kwargs: _Params.kwargs,
+) -> Tuple[_Accum, _Container]:
+    # Unfortunately we have to do some casting, because mypy does not support higher-ranked types
+    # (what we want here is to make the type of `func` something like
+    # `forall[_Elem] Callable[Concatenate[_Accum, _Elem, _Params], Tuple[_Accum, _Elem]]`).
     if container is None:
         return acc, None
-    elif type(container) in (list, tuple, zip):
-        new_container = []
+    elif isinstance(container, (tuple, list)):
+        new_list = []
         for elem in container:
-            acc, new_elem = map_accum(func, acc, elem, *args)
-            new_container.append(new_elem)
-        container_type = type(container)
-        result_type = list if container_type == zip else container_type
-        return acc, result_type(new_container)
-    elif type(container) == dict:
-        new_container = dict(container)
-        for key, elem in new_container.items():
-            acc, new_container[key] = map_accum(func, acc, elem, *args)
-        return acc, new_container
+            acc, new_elem = map_accum(func, acc, elem, *args, **kwargs)
+            new_list.append(new_elem)
+        return acc, cast(_Container, type(container)(new_list))
+    elif isinstance(container, dict):
+        new_dict = {}
+        for key, elem in container.items():
+            acc, new_dict[key] = map_accum(func, acc, elem, *args, **kwargs)
+        return acc, cast(_Container, new_dict)
     else:
-        return func(acc, container, *args)
+        acc, new_container = func(acc, cast(_Elem, container), *args, **kwargs)
+        return acc, cast(_Container, new_container)
 
 
-def fold_and(func: Callable, container) -> bool:
-    if type(container) in (list, tuple, zip):
+def fold_and(func: Callable[[Any], bool], container: Union[List, Tuple, Dict, Any]) -> bool:
+    if type(container) in (list, tuple):
         return all(fold_and(func, elem) for elem in container)
     elif type(container) == dict:
         return all(fold_and(func, elem) for elem in container.values())

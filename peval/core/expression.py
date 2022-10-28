@@ -683,15 +683,16 @@ class _peval_expression_dispatcher:
     @staticmethod
     def handle_Dict(state: ImmutableDict, node: ast.Dict, ctx: ImmutableADict):
 
-        state, pairs = map_peval_expression(state, zip(node.keys, node.values), ctx)
-        can_eval = all_known_values(pairs)
+        state, pevaled = map_peval_expression(state, [node.keys, node.values], ctx)
+        can_eval = all_known_values(pevaled)
 
         if can_eval:
-            new_dict = dict((key.value, value.value) for key, value in pairs)
+            new_dict = dict((key.value, value.value) for key, value in zip(*pevaled))
             return state, KnownValue(value=new_dict)
         else:
-            state, keys_values = map_reify(state, zip(*pairs))
-            new_node = replace_fields(node, keys=list(keys_values[0]), values=list(keys_values[1]))
+            state, nodes = map_reify(state, pevaled)
+            keys, values = nodes
+            new_node = replace_fields(node, keys=keys, values=values)
             return state, new_node
 
     @staticmethod
