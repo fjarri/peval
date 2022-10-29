@@ -39,9 +39,9 @@ def check_peval_expression(
 
     assert_ast_equal(result.node, expected_tree)
 
-    assert result.fully_evaluated == fully_evaluated
+    assert (result.known_value is not None) == fully_evaluated
     if fully_evaluated:
-        assert result.value == expected_value
+        assert result.known_value.value == expected_value
 
     if expected_temp_bindings is not None:
         for key, val in expected_temp_bindings.items():
@@ -455,12 +455,12 @@ def test_generator_exp():
     result, gen_sym = peval_expression(source_tree, gen_sym, bindings)
 
     assert_ast_equal(result.node, expected_tree)
-    assert result.fully_evaluated
+    assert result.known_value is not None
 
     expected_genexp = (x + 1 for x in range(10))
 
-    assert type(result.value) == type(expected_genexp)
-    assert list(result.value) == list(expected_genexp)
+    assert type(result.known_value.value) == type(expected_genexp)
+    assert list(result.known_value.value) == list(expected_genexp)
 
     # Since the binding contained the reference to the same genexp,
     # and we destroyed it, we need to do the evaluation again

@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from peval.core.reify import KnownValue, is_known_value, reify, reify_unwrapped
+from peval.core.reify import KnownValue, reify, reify_unwrapped
 from peval.core.gensym import GenSym
 
 from tests.utils import assert_ast_equal
@@ -22,7 +22,7 @@ def check_reify(value, expected_ast, preferred_name=None, expected_binding=None)
 def check_node_to_maybe_kvalue(node, bindings, expected_result, expected_preferred_name=None):
     node_or_kvalue = node_to_maybe_kvalue(node, bindings)
 
-    if is_known_value(node_or_kvalue):
+    if isinstance(node_or_kvalue, KnownValue):
         assert node_or_kvalue.value == expected_result
         assert node_or_kvalue.preferred_name == expected_preferred_name
     else:

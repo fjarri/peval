@@ -1,10 +1,10 @@
 import ast
 import operator
-from typing import Tuple
+from typing import Tuple, NamedTuple, Optional, Mapping, Any, Union
 
 from peval.tools import Dispatcher, ImmutableADict, ast_equal, replace_fields
 from peval.core.gensym import GenSym
-from peval.core.reify import KnownValue, is_known_value, reify
+from peval.core.reify import KnownValue, reify
 from peval.wisdom import is_pure_callable
 from peval.typing import ConstsDictT
 from peval.tools import ImmutableDict, fold_and, map_accum
@@ -48,8 +48,17 @@ def not_(val):
     return not val
 
 
+class State(NamedTuple):
+    gen_sym: GenSym
+    temp_bindings: ImmutableDict[str, Any]
+
+
+class Context(NamedTuple):
+    bindings: Mapping[str, Any]
+
+
 def _reify_func(acc, value, create_binding):
-    if is_known_value(value):
+    if isinstance(value, KnownValue):
         # For ``reify()`` we do not need to pass through
         # the whole state, only ``gen_sym``.
         gen_sym, bindings = acc
@@ -60,17 +69,17 @@ def _reify_func(acc, value, create_binding):
         return acc, value
 
 
-def map_reify(state: ImmutableADict, container, create_binding: bool = False):
+def map_reify(state: State, container, create_binding: bool = False):
     acc = (state.gen_sym, ImmutableDict())
     acc, new_container = map_accum(_reify_func, acc, container, create_binding)
     gen_sym, bindings = acc
 
-    new_state = state.with_(gen_sym=gen_sym, temp_bindings=state.temp_bindings | bindings)
+    new_state = State(gen_sym=gen_sym, temp_bindings=state.temp_bindings | bindings)
 
     return new_state, new_container
 
 
-def map_peval_expression(state: ImmutableADict, container, ctx: ImmutableADict):
+def map_peval_expression(state: State, container, ctx: Context):
     return map_accum(_peval_expression, state, container, ctx)
 
 
@@ -80,11 +89,11 @@ def map_get_value(container):
 
 
 def all_known_values(container):
-    return fold_and(is_known_value, container)
+    return fold_and(lambda val: isinstance(val, KnownValue), container)
 
 
 def all_known_values_or_none(container) -> bool:
-    return fold_and(lambda val: (val is None or is_known_value(val)), container)
+    return fold_and(lambda val: (val is None or isinstance(val, KnownValue)), container)
 
 
 def try_call(obj, args=(), kwds={}):
@@ -111,7 +120,7 @@ def try_call_method(obj, name, args=(), kwds={}):
     return try_call(attr, args=args, kwds=kwds)
 
 
-def peval_call(state, ctx, func, args=[], keywords=[]):
+def peval_call(state: State, ctx: Context, func, args=[], keywords=[]):
 
     assert all(type(arg) != ast.Starred for arg in args)
     assert all(kw.arg is not None for kw in keywords)
@@ -148,7 +157,7 @@ def try_eval_call(function, args=[], keywords=[]):
     return try_call(function, args=args, kwds=kwds)
 
 
-def peval_boolop(state: ImmutableADict, ctx: ImmutableADict, op, values):
+def peval_boolop(state: State, ctx: Context, op, values):
     assert type(op) in (ast.And, ast.Or)
 
     new_values = []
@@ -156,7 +165,7 @@ def peval_boolop(state: ImmutableADict, ctx: ImmutableADict, op, values):
         state, new_value = _peval_expression(state, value, ctx)
 
         # Short circuit
-        if is_known_value(new_value):
+        if isinstance(new_value, KnownValue):
             success, bool_value = try_call_method(new_value.value, "__bool__")
             # TODO: the following may raise an exception if __bool__() returns something weird.
             short_circuit_applicable = success and (
@@ -176,12 +185,12 @@ def peval_boolop(state: ImmutableADict, ctx: ImmutableADict, op, values):
         return state, ast.BoolOp(op=op, values=new_values)
 
 
-def peval_binop(state: ImmutableADict, ctx: ImmutableADict, op: ast.operator, left, right):
+def peval_binop(state: State, ctx: Context, op: ast.operator, left, right):
 
     state, (peval_left, peval_right) = map_peval_expression(state, [left, right], ctx)
     unevaled_state, [unevaled_left, unevaled_right] = map_reify(state, [peval_left, peval_right])
     unevaled_node = ast.BinOp(op=op, left=unevaled_left, right=unevaled_right)
-    if not is_known_value(peval_left) or not is_known_value(peval_right):
+    if not isinstance(peval_left, KnownValue) or not isinstance(peval_right, KnownValue):
         return unevaled_state, unevaled_node
 
     attr, rattr = BIN_OPS_NAMES[type(op)]
@@ -206,12 +215,12 @@ def peval_binop(state: ImmutableADict, ctx: ImmutableADict, op: ast.operator, le
     return unevaled_state, unevaled_node
 
 
-def peval_single_compare(state: ImmutableADict, ctx: ImmutableADict, op, left, right):
+def peval_single_compare(state: State, ctx: Context, op, left, right):
 
     state, (peval_left, peval_right) = map_peval_expression(state, [left, right], ctx)
     unevaled_state, [unevaled_left, unevaled_right] = map_reify(state, [peval_left, peval_right])
     unevaled_node = ast.Compare(ops=[op], left=unevaled_left, comparators=[unevaled_right])
-    if not is_known_value(peval_left) or not is_known_value(peval_right):
+    if not isinstance(peval_left, KnownValue) or not isinstance(peval_right, KnownValue):
         return unevaled_state, unevaled_node
 
     lval = peval_left.value
@@ -255,7 +264,7 @@ def peval_single_compare(state: ImmutableADict, ctx: ImmutableADict, op, left, r
     return state, KnownValue(result)
 
 
-def peval_compare(state: ImmutableADict, ctx: ImmutableADict, node: ast.Compare):
+def peval_compare(state: State, ctx: Context, node: ast.Compare):
 
     if len(node.ops) == 1:
         return peval_single_compare(state, ctx, node.ops[0], node.left, node.comparators[0])
@@ -274,7 +283,7 @@ def peval_compare(state: ImmutableADict, ctx: ImmutableADict, node: ast.Compare)
 
     state, result = peval_boolop(state, ctx, ast.And(), pair_values)
 
-    if is_known_value(result):
+    if isinstance(result, KnownValue):
         return state, result
 
     if type(result) != ast.BoolOp:
@@ -392,7 +401,7 @@ def peval_comprehension(state, node, ctx):
     for name in target_names:
         if name in elt_bindings:
             del elt_bindings[name]
-    elt_ctx = ctx.with_(bindings=elt_bindings)
+    elt_ctx = Context(bindings=elt_bindings)
 
     if type(node) == ast.DictComp:
         elt = ast.Tuple(elts=[node.key, node.value])
@@ -424,7 +433,7 @@ def _peval_comprehension_ifs(state, ifs, ctx):
     if len(ifs) > 0:
         joint_ifs = ast.BoolOp(op=ast.And(), values=ifs)
         state, joint_ifs_result = _peval_expression(state, joint_ifs, ctx)
-        if is_known_value(joint_ifs_result):
+        if isinstance(joint_ifs_result, KnownValue):
             return state, joint_ifs_result
         else:
             if isinstance(joint_ifs_result, ast.BoolOp):
@@ -459,11 +468,11 @@ def _peval_comprehension_generators(state, generators, ctx):
     state, iter_result = _peval_expression(state, generator.iter, ctx)
 
     masked_bindings = _get_masked_bindings(generator.target, ctx.bindings)
-    masked_ctx = ctx.with_(bindings=masked_bindings)
+    masked_ctx = Context(bindings=masked_bindings)
 
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
-    if is_known_value(ifs_result):
+    if isinstance(ifs_result, KnownValue):
         success, bool_value = try_call_method(ifs_result.value, "__bool__")
         if success and bool_value:
             ifs_result = []
@@ -519,11 +528,11 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
     state, iter_result = _peval_expression(state, generator.iter, ctx)
 
     masked_bindings = _get_masked_bindings(generator.target, ctx.bindings)
-    masked_ctx = ctx.with_(bindings=masked_bindings)
+    masked_ctx = Context(bindings=masked_bindings)
 
     state, ifs_result = _peval_comprehension_ifs(state, generator.ifs, masked_ctx)
 
-    if is_known_value(iter_result):
+    if isinstance(iter_result, KnownValue):
         iterable = iter_result.value
         iterator_evaluated, iterator = try_call_method(iterable, "__iter__")
     else:
@@ -542,10 +551,10 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 
         iter_bindings = dict(ctx.bindings)
         iter_bindings.update(target_bindings)
-        iter_ctx = ctx.with_(bindings=iter_bindings)
+        iter_ctx = Context(bindings=iter_bindings)
 
         state, ifs_value = _peval_expression(state, ifs_result, iter_ctx)
-        if not is_known_value(ifs_value):
+        if not isinstance(ifs_value, KnownValue):
             raise CannotEvaluateComprehension
 
         success, bool_value = try_call_method(ifs_value.value, "__bool__")
@@ -556,7 +565,7 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 
         if len(next_generators) == 0:
             state, elt_result = _peval_expression(state, elt, iter_ctx)
-            if not is_known_value(elt_result):
+            if not isinstance(elt_result, KnownValue):
                 raise CannotEvaluateComprehension
             accum.add_elem(elt_result.value)
         else:
@@ -569,12 +578,12 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
 @Dispatcher
 class _peval_expression_dispatcher:
     @staticmethod
-    def handle(state: ImmutableDict, node: ast.AST, _: ImmutableADict):
+    def handle(state: State, node: ast.AST, ctx: Context):
         # Pass through in case of type(node) == KnownValue
         return state, node
 
     @staticmethod
-    def handle_Name(state: ImmutableDict, node: ast.Name, ctx: ImmutableADict):
+    def handle_Name(state: State, node: ast.Name, ctx: Context):
         name = node.id
         if name in ctx.bindings:
             return state, KnownValue(ctx.bindings[name], preferred_name=name)
@@ -582,55 +591,39 @@ class _peval_expression_dispatcher:
             return state, node
 
     @staticmethod
-    def handle_Num(state: ImmutableDict, node: ast.Num, _: ImmutableADict):
+    def handle_Num(state: State, node: ast.Num, ctx: Context):
         return state, KnownValue(node.n)
 
     @staticmethod
-    def handle_Str(state: ImmutableDict, node: ast.Str, _: ImmutableADict):
+    def handle_Str(state: State, node: ast.Str, ctx: Context):
         return state, KnownValue(node.s)
 
     @staticmethod
-    def handle_Bytes(state: ImmutableDict, node: ast.Bytes, _: ImmutableADict):
+    def handle_Bytes(state: State, node: ast.Bytes, ctx: Context):
         return state, KnownValue(node.s)
 
     @staticmethod
-    def handle_NameConstant(
-        state: ImmutableDict,
-        node: ast.NameConstant,
-        _: ImmutableADict,
-    ):
+    def handle_NameConstant(state: State, node: ast.NameConstant, ctx: Context):
         return state, KnownValue(node.value)
 
     @staticmethod
-    def handle_Constant(
-        state: ImmutableDict,
-        node: ast.Constant,
-        _: ImmutableADict,
-    ):
+    def handle_Constant(state: State, node: ast.Constant, ctx: Context):
         return state, KnownValue(node.value)
 
     @staticmethod
-    def handle_BoolOp(
-        state: ImmutableDict,
-        node: ast.BoolOp,
-        ctx: ImmutableADict,
-    ):
+    def handle_BoolOp(state: State, node: ast.BoolOp, ctx: Context):
         return peval_boolop(state, ctx, node.op, node.values)
 
     @staticmethod
-    def handle_BinOp(state: ImmutableDict, node: ast.BinOp, ctx: ImmutableADict):
+    def handle_BinOp(state: State, node: ast.BinOp, ctx: Context):
         return peval_binop(state, ctx, node.op, node.left, node.right)
 
     @staticmethod
-    def handle_UnaryOp(
-        state: ImmutableDict,
-        node: ast.UnaryOp,
-        ctx: ImmutableADict,
-    ):
+    def handle_UnaryOp(state: State, node: ast.UnaryOp, ctx: Context):
         state, peval_node = _peval_expression(state, node.operand, ctx)
         unevaled_state, unevaled_node = map_reify(state, peval_node)
         unevaled_result = ast.UnaryOp(op=node.op, operand=unevaled_node)
-        if not is_known_value(peval_node):
+        if not isinstance(peval_node, KnownValue):
             return unevaled_state, unevaled_result
 
         if type(node.op) == ast.Not:
@@ -655,17 +648,13 @@ class _peval_expression_dispatcher:
         return state, result
 
     @staticmethod
-    def handle_Lambda(
-        state: ImmutableDict,
-        node: ast.Lambda,
-        ctx: ImmutableADict,
-    ):
+    def handle_Lambda(state: State, node: ast.Lambda, ctx: Context):
         raise NotImplementedError
 
     @staticmethod
-    def handle_IfExp(state: ImmutableDict, node: ast.IfExp, ctx: ImmutableADict):
+    def handle_IfExp(state: State, node: ast.IfExp, ctx: Context):
         state, test_value = _peval_expression(state, node.test, ctx)
-        if is_known_value(test_value):
+        if isinstance(test_value, KnownValue):
             success, bool_value = try_call_method(test_value.value, "__bool__")
             if success:
                 taken_node = node.body if bool_value else node.orelse
@@ -681,7 +670,7 @@ class _peval_expression_dispatcher:
         )
 
     @staticmethod
-    def handle_Dict(state: ImmutableDict, node: ast.Dict, ctx: ImmutableADict):
+    def handle_Dict(state: State, node: ast.Dict, ctx: Context):
 
         state, pevaled = map_peval_expression(state, [node.keys, node.values], ctx)
         can_eval = all_known_values(pevaled)
@@ -696,7 +685,7 @@ class _peval_expression_dispatcher:
             return state, new_node
 
     @staticmethod
-    def handle_List(state: ImmutableDict, node: ast.List, ctx: ImmutableADict):
+    def handle_List(state: State, node: ast.List, ctx: Context):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -709,7 +698,7 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_Tuple(state: ImmutableDict, node: ast.Tuple, ctx: ImmutableADict):
+    def handle_Tuple(state: State, node: ast.Tuple, ctx: Context):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -722,7 +711,7 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_Set(state: ImmutableDict, node: ast.Set, ctx: ImmutableADict):
+    def handle_Set(state: State, node: ast.Set, ctx: Context):
 
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
@@ -735,39 +724,23 @@ class _peval_expression_dispatcher:
             return state, replace_fields(node, elts=new_elts)
 
     @staticmethod
-    def handle_ListComp(
-        state: ImmutableDict,
-        node: ast.ListComp,
-        ctx: ImmutableADict,
-    ):
+    def handle_ListComp(state: State, node: ast.ListComp, ctx: Context):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_SetComp(
-        state: ImmutableDict,
-        node: ast.SetComp,
-        ctx: ImmutableADict,
-    ):
+    def handle_SetComp(state: State, node: ast.SetComp, ctx: Context):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_DictComp(
-        state: ImmutableDict,
-        node: ast.DictComp,
-        ctx: ImmutableADict,
-    ):
+    def handle_DictComp(state: State, node: ast.DictComp, ctx: Context):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_GeneratorExp(
-        state: ImmutableDict,
-        node: ast.GeneratorExp,
-        ctx: ImmutableADict,
-    ):
+    def handle_GeneratorExp(state: State, node: ast.GeneratorExp, ctx: Context):
         return peval_comprehension(state, node, ctx)
 
     @staticmethod
-    def handle_Yield(state: ImmutableDict, node: ast.Yield, ctx: ImmutableADict):
+    def handle_Yield(state: State, node: ast.Yield, ctx: Context):
         state, result = _peval_expression(state, node.value, ctx)
 
         # We cannot evaluate a yield expression,
@@ -776,11 +749,7 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value)
 
     @staticmethod
-    def handle_YieldFrom(
-        state: ImmutableDict,
-        node: ast.YieldFrom,
-        ctx: ImmutableADict,
-    ):
+    def handle_YieldFrom(state: State, node: ast.YieldFrom, ctx: Context):
         state, result = _peval_expression(state, node.value, ctx)
 
         # We cannot evaluate a yield expression,
@@ -789,25 +758,17 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value)
 
     @staticmethod
-    def handle_Compare(
-        state: ImmutableDict,
-        node: ast.Compare,
-        ctx: ImmutableADict,
-    ):
+    def handle_Compare(state: State, node: ast.Compare, ctx: Context):
         return peval_compare(state, ctx, node)
 
     @staticmethod
-    def handle_Call(state: ImmutableDict, node: ast.Call, ctx: ImmutableADict):
+    def handle_Call(state: State, node: ast.Call, ctx: Context):
         return peval_call(state, ctx, node.func, args=node.args, keywords=node.keywords)
 
     @staticmethod
-    def handle_Attribute(
-        state: ImmutableDict,
-        node: ast.Attribute,
-        ctx: ImmutableADict,
-    ):
+    def handle_Attribute(state: State, node: ast.Attribute, ctx: Context):
         state, result = _peval_expression(state, node.value, ctx)
-        if is_known_value(result):
+        if isinstance(result, KnownValue):
             success, attr = try_get_attribute(result.value, node.attr)
             if success:
                 return state, KnownValue(value=attr)
@@ -816,14 +777,10 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value)
 
     @staticmethod
-    def handle_Subscript(
-        state: ImmutableDict,
-        node: ast.Subscript,
-        ctx: ImmutableADict,
-    ):
+    def handle_Subscript(state: State, node: ast.Subscript, ctx: Context):
         state, value_result = _peval_expression(state, node.value, ctx)
         state, slice_result = _peval_expression(state, node.slice, ctx)
-        if is_known_value(value_result) and is_known_value(slice_result):
+        if isinstance(value_result, KnownValue) and isinstance(slice_result, KnownValue):
             success, elem = try_call_method(
                 value_result.value, "__getitem__", args=(slice_result.value,)
             )
@@ -837,15 +794,15 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, value=new_value, slice=new_slice)
 
     @staticmethod
-    def handle_Index(state: ImmutableDict, node: ast.Index, ctx: ImmutableADict):
+    def handle_Index(state: State, node: ast.Index, ctx: Context):
         state, result = _peval_expression(state, node.value, ctx)
-        if is_known_value(result):
+        if isinstance(result, KnownValue):
             return state, KnownValue(value=result.value)
         else:
             return state, result
 
     @staticmethod
-    def handle_Slice(state: ImmutableDict, node: ast.Slice, ctx: ImmutableADict):
+    def handle_Slice(state: State, node: ast.Slice, ctx: Context):
         state, results = map_peval_expression(state, (node.lower, node.upper, node.step), ctx)
         # how do we handle None values in nodes? Technically, they are known values
         if all_known_values_or_none(results):
@@ -856,11 +813,7 @@ class _peval_expression_dispatcher:
         return state, new_node
 
     @staticmethod
-    def handle_ExtSlice(
-        state: ImmutableDict,
-        node: ast.ExtSlice,
-        ctx: ImmutableADict,
-    ):
+    def handle_ExtSlice(state: State, node: ast.ExtSlice, ctx: Context):
         state, results = map_peval_expression(state, node.dims, ctx)
         if all_known_values(results):
             return state, KnownValue(value=tuple(result.value for result in results))
@@ -868,46 +821,43 @@ class _peval_expression_dispatcher:
         return state, replace_fields(node, dims=new_nodes)
 
 
-class EvaluationResult:
-    def __init__(
-        self, fully_evaluated: bool, node, temp_bindings: ImmutableADict, value=None
-    ) -> None:
-        self.fully_evaluated = fully_evaluated
-        if fully_evaluated:
-            self.value = value
-        self.temp_bindings = temp_bindings
-        self.node = node
+class EvaluationResult(NamedTuple):
+    known_value: Optional[KnownValue]
+    node: ast.AST
+    temp_bindings: Mapping[str, Any]
 
 
-def _peval_expression(state: ImmutableADict, node, ctx: ImmutableADict):
+def _peval_expression(
+    state: State, node: ast.AST, ctx: Context
+) -> Tuple[State, Union[KnownValue, ast.AST]]:
     return _peval_expression_dispatcher(node, state, node, ctx)
 
 
 def peval_expression(
-    node, gen_sym: GenSym, bindings: ConstsDictT, create_binding: bool = False
+    node: ast.AST, gen_sym: GenSym, bindings: Mapping[str, Any], create_binding: bool = False
 ) -> Tuple[EvaluationResult, GenSym]:
 
-    ctx = ImmutableADict(bindings=bindings)
-    state = ImmutableADict(gen_sym=gen_sym, temp_bindings=ImmutableADict())
+    ctx = Context(bindings=bindings)
+    state = State(gen_sym=gen_sym, temp_bindings=ImmutableADict())
 
     state, result = _peval_expression(state, node, ctx)
-    if is_known_value(result):
+    if isinstance(result, KnownValue):
+        known_value = result
         state, result_node = map_reify(state, result, create_binding)
-        eval_result = EvaluationResult(
-            fully_evaluated=True,
-            value=result.value,
-            node=result_node,
-            temp_bindings=state.temp_bindings,
-        )
     else:
-        eval_result = EvaluationResult(
-            fully_evaluated=False, node=result, temp_bindings=state.temp_bindings
-        )
+        known_value = None
+        result_node = result
+
+    eval_result = EvaluationResult(
+        known_value=known_value,
+        node=result_node,
+        temp_bindings=state.temp_bindings,
+    )
 
     return eval_result, state.gen_sym
 
 
-def try_peval_expression(node, bindings):
+def try_peval_expression(node: ast.AST, bindings: Mapping[str, Any]) -> Tuple[bool, ast.AST]:
     """
     Try to partially evaluate the AST expression ``node`` using the dictionary ``bindings``.
     Returns a pair ``(evaluated, result)``, where ``evaluated`` is a boolean
@@ -917,7 +867,7 @@ def try_peval_expression(node, bindings):
 
     gen_sym = GenSym()
     eval_result, gen_sym = peval_expression(node, gen_sym, bindings)
-    if eval_result.fully_evaluated:
-        return True, eval_result.value
+    if eval_result.known_value is not None:
+        return True, eval_result.known_value.value
     else:
         return False, node

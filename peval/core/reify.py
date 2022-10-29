@@ -30,10 +30,6 @@ class KnownValue:
         )
 
 
-def is_known_value(node_or_kvalue: Any) -> bool:
-    return type(node_or_kvalue) == KnownValue
-
-
 ReifyResT = Tuple[ConstantOrNameNodeT, GenSym, Dict[str, ConsantOrASTNodeT]]
 
 

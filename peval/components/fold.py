@@ -142,8 +142,8 @@ def forward_transfer(
 
         new_values = dict(in_env.values)
 
-        if result.fully_evaluated:
-            new_value = Value(value=result.value)
+        if result.known_value is not None:
+            new_value = Value(value=result.known_value.value)
         else:
             new_value = Value(undefined=True)
         new_values[target] = new_value
