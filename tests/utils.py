@@ -8,7 +8,7 @@ from peval.tools import ast_equal, unindent, unparse
 from peval.core.function import Function
 
 
-def unparser() -> str:
+def _unparser() -> str:
 
     # Different unparsers we use render some nodes differently.
     # For example, `astunparse` encloses logical expressions in parentheses when unparsing,
@@ -17,7 +17,9 @@ def unparser() -> str:
     # we need this compatibility stub, because some tests check the unparsed source.
 
     # follows the logic in `tools.utils.unparse()`
-    if sys.version_info < (3, 9):
+    try:
+        from ast import unparse
+    except ImportError:
         try:
             import astunparse
 
@@ -35,6 +37,10 @@ def unparser() -> str:
     else:
         return "ast"
 
+def unparser() -> str:
+    res = _unparser()
+    print(res)
+    return res
 
 def normalize_source(source):
 
