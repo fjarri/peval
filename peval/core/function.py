@@ -10,7 +10,14 @@ from types import FunctionType
 from collections import OrderedDict
 from typing import Union, Optional, Callable, List, Iterable, Set
 
-from peval.tools import unindent, replace_fields, ImmutableADict, ast_inspector, ast_transformer
+from peval.tools import (
+    unparse,
+    unindent,
+    replace_fields,
+    ImmutableADict,
+    ast_inspector,
+    ast_transformer,
+)
 from peval.core.gensym import GenSym
 from peval.core.reify import reify_unwrapped
 from peval.core.scope import analyze_scope
@@ -233,6 +240,11 @@ class Function:
         compiler_flags: int,
     ) -> None:
 
+        # TODO: write our own implementation that does not mutate the tree,
+        # and reuses existing nodes. For now we have to make a copy.
+        tree = copy.deepcopy(tree)
+        ast.fix_missing_locations(tree)
+
         self.tree = tree
         self.globals = globals_
         self.closure_vals = closure_vals
@@ -265,17 +277,6 @@ class Function:
         """
         Generates the function's source code based on its tree.
         """
-
-        try:
-            from ast import unparse
-        except ImportError:
-            try:
-                from astunparse import unparse
-            except ImportError:
-                from astor import to_source as unparse
-        else:
-            ast.fix_missing_locations(self.tree)
-
         return unparse(self.tree)
 
     @classmethod

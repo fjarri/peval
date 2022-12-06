@@ -2,11 +2,20 @@ import ast
 import inspect
 import os, os.path
 import subprocess
+import sys
 
+from peval.tools import unparse
 from peval.core.cfg import build_cfg
-from tests.utils import _if_expr, print_diff, unparse
+from tests.utils import print_diff, unparser
 
 RENDER_GRAPHS = False
+
+
+def _if_expr(a, b):
+    if unparser() == "astunparse":
+        return f"if ({a} > {b}):"
+    else:
+        return f"if {a} > {b}:"
 
 
 def make_label(node):
@@ -32,7 +41,6 @@ def get_labeled_edges(cfg):
             continue
         visited.add(src_id)
 
-        print(ast.dump(cfg.graph.nodes[src_id].ast_node))
         src_label = make_label(cfg.graph.nodes[src_id])
 
         dests = [
