@@ -1,14 +1,12 @@
 import ast
 import copy
 import sys
-
-import astunparse
 import inspect
 
 from peval.core.function import Function
 from peval.tools import unindent
 
-from tests.utils import normalize_source, function_from_source
+from tests.utils import normalize_source, function_from_source, unparser
 
 
 global_var = 1
@@ -315,11 +313,18 @@ def test_get_source():
     function = Function.from_object(sample_fn)
     source = normalize_source(function.get_source())
 
+    if unparser() == "astunparse":
+        cond = "(foo == 'bar')"
+        ret = "(x + y)"
+    else:
+        cond = "foo == 'bar'"
+        ret = "x + y"
+
     expected_source = unindent(
-        """
+        f"""
         def sample_fn(x, y, foo='bar', **kw):
-            if (foo == 'bar'):
-                return (x + y)
+            if {cond}:
+                return {ret}
             else:
                 return kw['zzz']
         """
@@ -333,17 +338,3 @@ def sample_fn(x, y, foo="bar", **kw):
         return x + y
     else:
         return kw["zzz"]
-
-
-def sample_fn2(x, y, foo="bar", **kw):
-    if foo == "bar":
-        return x - y
-    else:
-        return kw["zzz"]
-
-
-def sample_fn3(x, y, foo="bar", **kwargs):
-    if foo == "bar":
-        return x + y
-    else:
-        return kwargs["zzz"]

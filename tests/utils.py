@@ -2,11 +2,38 @@ from __future__ import print_function
 
 import ast
 import difflib
+import sys
 
-from astunparse import unparse, dump
-
-from peval.tools import unindent, ast_equal
+from peval.tools import ast_equal, unindent, unparse
 from peval.core.function import Function
+
+
+def unparser() -> str:
+
+    # Different unparsers we use render some nodes differently.
+    # For example, `astunparse` encloses logical expressions in parentheses when unparsing,
+    # while `ast` and `astor` don't.
+    # So while we can have either of the three backends available,
+    # we need this compatibility stub, because some tests check the unparsed source.
+
+    # follows the logic in `tools.utils.unparse()`
+    if sys.version_info < (3, 9):
+        try:
+            import astunparse
+
+            return "astunparse"
+        except ImportError:
+            pass
+
+        try:
+            import astor
+
+            return "astor"
+        except Exception:
+            raise
+
+    else:
+        return "ast"
 
 
 def normalize_source(source):
@@ -47,8 +74,8 @@ def assert_ast_equal(test_ast, expected_ast, print_ast=True):
     if not equal:
 
         if print_ast:
-            expected_ast_str = dump(expected_ast)
-            test_ast_str = dump(test_ast)
+            expected_ast_str = ast.dump(expected_ast)
+            test_ast_str = ast.dump(test_ast)
             print_diff(test_ast_str, expected_ast_str)
 
         expected_source = normalize_source(unparse(expected_ast))

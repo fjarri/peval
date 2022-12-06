@@ -6,8 +6,6 @@ from peval.tools import replace_fields, ast_walker, ImmutableDict
 from peval.core.expression import peval_expression
 from peval.typing import ConstsDictT, PassOutputT
 
-from astunparse import dump
-
 
 @ast_walker
 class _peval_function_header:

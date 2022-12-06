@@ -2,19 +2,24 @@ import ast
 import inspect
 import os, os.path
 import subprocess
+import sys
 
-from astunparse import unparse
-
+from peval.tools import unparse
 from peval.core.cfg import build_cfg
-
-from tests.utils import print_diff
-
+from tests.utils import print_diff, unparser
 
 RENDER_GRAPHS = False
 
 
+def _if_expr(a, b):
+    if unparser() == "astunparse":
+        return f"if ({a} > {b}):"
+    else:
+        return f"if {a} > {b}:"
+
+
 def make_label(node):
-    return unparse(node.ast_node).split("\n")[1]
+    return unparse(node.ast_node).strip().split("\n")[0]
 
 
 def get_edges(cfg):
@@ -142,11 +147,11 @@ def test_func_if():
         func_if,
         expected_edges=[
             ("a = 1", "b = 2"),
-            ("b = 2", "if (a > 2):"),
-            ("if (a > 2):", "do_stuff()"),
-            ("if (a > 2):", "if (a > 4):"),
-            ("if (a > 4):", "bar()"),
-            ("if (a > 4):", "foo()"),
+            ("b = 2", _if_expr("a", 2)),
+            (_if_expr("a", 2), "do_stuff()"),
+            (_if_expr("a", 2), _if_expr("a", 4)),
+            (_if_expr("a", 4), "bar()"),
+            (_if_expr("a", 4), "foo()"),
             ("foo()", "return b"),
             ("bar()", "return b"),
             ("do_stuff()", "do_smth_else()"),
@@ -180,11 +185,11 @@ def test_func_for():
         expected_edges=[
             ("a = 1", "for i in range(5):"),
             ("for i in range(5):", "b = 2"),
-            ("b = 2", "if (i > 4):"),
-            ("if (i > 4):", "break"),
-            ("if (i > 4):", "if (i > 2):"),
-            ("if (i > 2):", "continue"),
-            ("if (i > 2):", "foo()"),
+            ("b = 2", _if_expr("i", 4)),
+            (_if_expr("i", 4), "break"),
+            (_if_expr("i", 4), _if_expr("i", 2)),
+            (_if_expr("i", 2), "continue"),
+            (_if_expr("i", 2), "foo()"),
             ("foo()", "c = 3"),
             ("foo()", "for i in range(5):"),
             ("c = 3", "return b"),
@@ -224,11 +229,11 @@ def test_func_try_except():
             ("try:", "do()"),
             ("do()", "except Exception:"),
             ("do()", "except ValueError:"),
-            ("do()", "if (i > 3):"),
-            ("if (i > 3):", "break"),
-            ("if (i > 3):", "except Exception:"),
-            ("if (i > 3):", "except ValueError:"),
-            ("if (i > 3):", "stuff()"),
+            ("do()", _if_expr("i", 3)),
+            (_if_expr("i", 3), "break"),
+            (_if_expr("i", 3), "except Exception:"),
+            (_if_expr("i", 3), "except ValueError:"),
+            (_if_expr("i", 3), "stuff()"),
             ("stuff()", "do_else()"),
             ("stuff()", "except Exception:"),
             ("stuff()", "except ValueError:"),
