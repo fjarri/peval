@@ -17,23 +17,31 @@ def unparser() -> str:
     # we need this compatibility stub, because some tests check the unparsed source.
 
     # follows the logic in `tools.utils.unparse()`
-    if sys.version_info < (3, 9):
-        try:
-            import astunparse
+    try:
+        from ast import unparse
 
-            return "astunparse"
-        except ImportError:
-            pass
-
-        try:
-            import astor
-
-            return "astor"
-        except Exception:
-            raise
-
-    else:
         return "ast"
+    except ImportError:
+        pass
+
+    try:
+        from astunparse import unparse
+
+        return "astunparse"
+    except ImportError:
+        pass
+
+    try:
+        from astor import to_source
+
+        return "astor"
+    except ImportError:
+        pass
+
+    raise ImportError(
+        "Unparsing functionality is not available; switch to Python 3.9+, "
+        "install with 'astunparse' feature, or install with 'astor' feature."
+    )
 
 
 def normalize_source(source):

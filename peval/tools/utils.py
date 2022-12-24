@@ -1,35 +1,52 @@
 import ast
 import re
-import sys
-from typing import Callable, Any, Iterable, Tuple, Sequence, Union, TypeVar, List, Dict, cast
+from typing import (
+    Callable,
+    Any,
+    Iterable,
+    Optional,
+    Tuple,
+    Sequence,
+    Union,
+    TypeVar,
+    List,
+    Dict,
+    cast,
+)
 from typing_extensions import ParamSpec, Concatenate
 
 
-def unparse(tree: ast.AST) -> str:
-    if sys.version_info >= (3, 9):
-        return ast.unparse(tree)
+# TODO: as long as we're supporting Python 3.8 we have to rely on third-party unparsers.
+# Clean it up when Py3.8 is dropped.
 
-    # TODO: as long as we're supporting Python 3.8 we have to rely on third-party unparsers.
-    # Clean it up when Py3.8 is dropped.
+_unparse = None
 
+try:
+    from ast import unparse as _unparse  # type: ignore
+except ImportError:
+    pass
+
+if _unparse is None:
     # Enabled by the `astunparse` feature.
     try:
-        import astunparse
-
-        return astunparse.unparse(tree)
+        from astunparse import unparse as _unparse  # type: ignore
     except ImportError:
         pass
 
+if _unparse is None:
     # Enabled by the `astor` feature.
     try:
-        import astor
+        from astor import to_source as _unparse  # type: ignore
+    except ImportError:
+        pass
 
-        return astor.to_source(tree)
-    except ImportError as exc:
-        raise ImportError(
-            "Unparsing functionality is not available; switch to Python 3.9+, "
-            "install with 'astunparse' feature, or install with 'astor' feature."
-        ) from exc
+if _unparse is None:
+    raise ImportError(
+        "Unparsing functionality is not available; switch to Python 3.9+, "
+        "install with 'astunparse' feature, or install with 'astor' feature."
+    )
+
+unparse = cast(Callable[[ast.AST], str], _unparse)
 
 
 def unindent(source: str) -> str:
