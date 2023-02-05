@@ -162,7 +162,6 @@ def test_specialize_on_missing_names():
 
 
 def test_peval_closure():
-
     a = 1
     b = 2
 
@@ -184,7 +183,6 @@ def test_peval_prohibit_nested_definitions():
 
 
 def test_peval_prohibit_async():
-
     f = function_from_source(
         """
         async def f(x):

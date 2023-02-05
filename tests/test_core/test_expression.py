@@ -22,7 +22,6 @@ def check_peval_expression(
     expected_value=None,
     expected_temp_bindings=None,
 ):
-
     source_tree = expression_ast(source)
 
     # In some cases we need to enforce the expected node,
@@ -66,7 +65,6 @@ def check_peval_expression_bool(source, bindings, expected_value):
 
 
 def test_simple_cases():
-
     check_peval_expression("x", {}, "x")
     check_peval_expression("1", {}, "1", fully_evaluated=True, expected_value=1)
     check_peval_expression('"a"', {}, '"a"', fully_evaluated=True, expected_value="a")
@@ -159,7 +157,6 @@ def test_and():
 
 
 def test_and_short_circuit():
-
     global_state = dict(cnt=0)
 
     @pure
@@ -182,7 +179,6 @@ def test_or():
 
 
 def test_or_short_circuit():
-
     global_state = dict(cnt=0)
 
     @pure
@@ -216,7 +212,6 @@ def test_ifexp():
 
 
 def test_ifexp_short_circuit():
-
     global_state = dict(cnt=0)
 
     @pure
@@ -281,7 +276,6 @@ def test_attribute():
 
 
 def test_subscript():
-
     # Simple indices
 
     check_peval_expression(
@@ -443,7 +437,6 @@ def test_dict_comprehension():
 
 
 def test_generator_exp():
-
     # Need to do this manually, since we can't compare generator expressions
     # without changing their state.
 

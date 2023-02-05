@@ -91,7 +91,6 @@ def specialize_on(names: Union[str, Tuple[str, str]], maxsize=None) -> Callable:
     names_set = set(names)
 
     def _specializer(func):
-
         signature = inspect.signature(func)
 
         if not names_set.issubset(signature.parameters):

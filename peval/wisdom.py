@@ -89,7 +89,6 @@ for name in dir(builtins):
 
 
 def is_pure_callable(callable_) -> bool:
-
     if type(callable_) == type:
         # A regular class or a builtin type
         unbound_callable = callable_.__init__

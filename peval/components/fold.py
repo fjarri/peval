@@ -82,7 +82,6 @@ class Environment:
 
 
 def meet_envs(env1: Environment, env2: Environment) -> Environment:
-
     lhs = env1.values
     rhs = env2.values
     lhs_keys = set(lhs.keys())
@@ -120,7 +119,6 @@ TempBindingsT = Mapping[str, Any]
 def forward_transfer(
     gen_sym: GenSym, in_env: Environment, statement: ast.stmt
 ) -> Tuple[GenSym, Environment, List[CachedExpression], TempBindingsT]:
-
     if isinstance(statement, (ast.Assign, ast.AnnAssign)):
         if isinstance(statement, ast.AnnAssign):
             target = statement.target
@@ -213,7 +211,6 @@ def get_sorted_nodes(graph: Graph, enter: int) -> List[int]:
 def maximal_fixed_point(
     gen_sym: GenSym, graph: Graph, enter: int, bindings: ConstsDictT
 ) -> Tuple[List[CachedExpression], TempBindingsT]:
-
     states = dict(
         (
             node_id,
@@ -261,7 +258,6 @@ def maximal_fixed_point(
     new_exprs = {}
     temp_bindings = {}
     for node_id, state in states.items():
-
         node = graph.nodes[node_id].ast_node
         exprs = list(state.exprs)
         exprs_temp_bindings = dict(state.temp_bindings)
@@ -297,7 +293,6 @@ ReplaceByPathNodeT = Union[ast.If, ast.Assign, ast.Expr, ast.Return]
 def replace_by_path(
     obj: ReplaceByPathNodeT, path: Iterable[str], new_value: ast.expr
 ) -> ReplaceByPathNodeT:
-
     ptr = path[0]
 
     if len(path) > 1:

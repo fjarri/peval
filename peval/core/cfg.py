@@ -19,7 +19,6 @@ class Graph:
         return node_id
 
     def add_edge(self, src: int, dest: int) -> None:
-
         assert src in self.nodes
         assert dest in self.nodes
 
@@ -101,7 +100,6 @@ class ControlFlowGraph:
 
 
 def _build_if_cfg(node: ast.If) -> ControlFlowSubgraph:
-
     cfg_true = _build_cfg(node.body)
     exits = cfg_true.exits
     jumps = cfg_true.jumps
@@ -124,7 +122,6 @@ def _build_if_cfg(node: ast.If) -> ControlFlowSubgraph:
 
 
 def _build_loop_cfg(node: Union[ast.For, ast.While]) -> ControlFlowSubgraph:
-
     cfg = _build_cfg(node.body)
     graph = cfg.graph
 
@@ -205,7 +202,6 @@ def _build_try_block_cfg(
     handlers: List[ast.ExceptHandler],
     orelse: List[ast.AST],
 ) -> ControlFlowSubgraph:
-
     graph = Graph()
     enter = graph.add_node(try_node)
 
@@ -259,7 +255,6 @@ def _build_try_finally_block_cfg(
     orelse: List[ast.AST],
     finalbody: List[ast.AST],
 ) -> ControlFlowSubgraph:
-
     try_cfg = _build_try_block_cfg(try_node, body, handlers, orelse)
 
     if len(finalbody) == 0:
@@ -325,7 +320,6 @@ def _build_node_cfg(node) -> ControlFlowSubgraph:
 
 
 def _build_cfg(statements) -> ControlFlowSubgraph:
-
     enter = id(statements[0])
 
     exits = [enter]
@@ -334,7 +328,6 @@ def _build_cfg(statements) -> ControlFlowSubgraph:
     jumps = Jumps()
 
     for i, node in enumerate(statements):
-
         cfg = _build_node_cfg(node)
 
         graph.update(cfg.graph)

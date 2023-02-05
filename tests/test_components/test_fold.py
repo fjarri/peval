@@ -38,7 +38,6 @@ def test_fold():
 
 
 def test_if_visit_only_true_branch():
-
     # This optimization can potentially save some time during constant propagation
     # (by not evaluating the functions that will be eliminated anyway).
     # Not implemented at the moment.

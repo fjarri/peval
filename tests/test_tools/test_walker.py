@@ -491,7 +491,6 @@ def test_visit_after():
 
 
 def test_block_autofix():
-
     # This transformer removes If nodes from statement blocks,
     # but it has no way to check whether the resulting body still has some nodes or not.
     # That's why the walker adds a Pass node automatically if after all the transformations

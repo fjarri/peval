@@ -54,7 +54,6 @@ def dummy_func_arg_groups(a, b, *args, **kwds):
 
 
 def test_bind_partial_args():
-
     func = Function.from_object(dummy_func)
 
     new_func = func.bind_partial(1).eval()
@@ -68,7 +67,6 @@ def test_bind_partial_args():
 
 
 def test_bind_partial_kwds():
-
     func = Function.from_object(dummy_func)
 
     new_func = func.bind_partial(1, d=10).eval()
@@ -82,7 +80,6 @@ def test_bind_partial_kwds():
 
 
 def test_bind_partial_varargs():
-
     func = Function.from_object(dummy_func_arg_groups)
 
     new_func = func.bind_partial(1, 2, 3).eval()
@@ -96,7 +93,6 @@ def test_bind_partial_varargs():
 
 
 def test_bind_partial_varkwds():
-
     func = Function.from_object(dummy_func_arg_groups)
 
     new_func = func.bind_partial(1, 2, d=10).eval()
@@ -110,7 +106,6 @@ def test_bind_partial_varkwds():
 
 
 def test_globals_contents():
-
     func = Function.from_object(make_one_var_closure())
 
     assert "global_var" in func.globals
@@ -118,7 +113,6 @@ def test_globals_contents():
 
 
 def test_closure_contents():
-
     func = Function.from_object(make_one_var_closure())
 
     assert "global_var" not in func.closure_vals
@@ -144,7 +138,6 @@ def test_copy_globals():
 
 
 def test_restore_simple_closure():
-
     closure_ref = make_one_var_closure()
     assert closure_ref() == 2
 
@@ -233,7 +226,6 @@ def test_reapply_decorators():
 
 
 def test_detect_future_features():
-
     # Test that the presence of a future feature is detected
 
     src = """
@@ -260,7 +252,6 @@ def test_detect_future_features():
 
 
 def test_preserve_future_feature_presence():
-
     src = """
         from __future__ import generator_stop
         def f():
@@ -280,7 +271,6 @@ def test_preserve_future_feature_presence():
 
 
 def test_preserve_future_feature_absence():
-
     src = """
         def f():
             error = lambda: next(i for i in range(3) if i==10)

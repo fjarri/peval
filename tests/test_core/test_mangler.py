@@ -8,7 +8,6 @@ from tests.utils import assert_ast_equal
 
 
 def test_mutiple_returns():
-
     source = unindent(
         """
     def f(x, y, z='foo'):

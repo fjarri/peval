@@ -239,7 +239,6 @@ class Function:
         closure_vals,
         compiler_flags: int,
     ) -> None:
-
         # TODO: write our own implementation that does not mutate the tree,
         # and reuses existing nodes. For now we have to make a copy.
         tree = copy.deepcopy(tree)

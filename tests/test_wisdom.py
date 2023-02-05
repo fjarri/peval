@@ -79,7 +79,6 @@ class Dummy:
 
 
 def test_is_pure():
-
     # a builtin function
     assert is_pure_callable(isinstance)
 

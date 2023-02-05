@@ -34,7 +34,6 @@ ReifyResT = Tuple[ConstantOrNameNodeT, GenSym, Dict[str, ConsantOrASTNodeT]]
 
 
 def reify(kvalue: KnownValue, gen_sym: GenSym, create_binding: bool = False) -> ReifyResT:
-
     value = kvalue.value
 
     # TODO: add a separate reify_constant() method that guarantees not to change the bindings

@@ -8,9 +8,7 @@ from peval.typing import ConstsDictT, PassOutputT
 
 
 def prune_cfg(node: ast.AST, bindings: ConstsDictT) -> PassOutputT:
-
     while True:
-
         new_node = node
 
         for func in (

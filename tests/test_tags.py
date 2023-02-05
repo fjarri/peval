@@ -39,7 +39,6 @@ def test_inline_prohibit_generator():
 
 
 def test_inline_prohibit_async():
-
     func = function_from_source(
         """
         async def func(x):

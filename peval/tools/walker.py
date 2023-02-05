@@ -127,7 +127,6 @@ _BLOCK_FIELDS = ("body", "orelse")
 
 class _Walker:
     def __init__(self, handler: Callable, inspect: bool = False, transform: bool = False) -> None:
-
         self._transform = transform
         self._inspect = inspect
         if not (self._transform or self._inspect):
@@ -268,7 +267,6 @@ class _Walker:
             return new_state, node
 
         for field, value in ast.iter_fields(node):
-
             block_context = field in _BLOCK_FIELDS and type(value) == list
             new_state, new_value = self._walk_field(
                 new_state, value, ctx, block_context=block_context
@@ -377,7 +375,6 @@ class _Walker:
     def __call__(
         self, *args, ctx=None
     ) -> Union[Optional[ImmutableADict], ast.AST, Tuple[Optional[ImmutableADict], ast.AST],]:
-
         if self._transform and self._inspect:
             if len(args) != 2:
                 raise TypeError(

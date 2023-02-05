@@ -20,7 +20,6 @@ def _visit_local(
     node_id = node.id if is_name else node.arg
 
     if node_id in to_mangle:
-
         if node_id in mangled:
             mangled_id = mangled[node_id]
         else:

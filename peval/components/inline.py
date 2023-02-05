@@ -61,7 +61,6 @@ def _inline(node, gen_sym, return_name, constants):
 def _wrap_in_loop(
     gen_sym: GenSym, body_nodes: List[ast.If], return_name: str
 ) -> Tuple[GenSym, List[ast.While], Dict[Any, Any]]:
-
     new_bindings = dict()
 
     return_flag, gen_sym = gen_sym("return_flag")
@@ -151,7 +150,6 @@ class _replace_returns_walker:
 
     @staticmethod
     def handle_Return(state, node, ctx, **_):
-
         state_update = dict(returns_ctr=state.returns_ctr + 1)
 
         new_nodes = [

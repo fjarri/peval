@@ -9,7 +9,6 @@ from peval.core.function import Function
 
 
 def unparser() -> str:
-
     # Different unparsers we use render some nodes differently.
     # For example, `astunparse` encloses logical expressions in parentheses when unparsing,
     # while `ast` and `astor` don't.
@@ -45,7 +44,6 @@ def unparser() -> str:
 
 
 def normalize_source(source):
-
     # trim newlines and trailing spaces --- some pretty printers add it
 
     # Note: this may change multiline string literals,
@@ -58,7 +56,6 @@ def normalize_source(source):
 
 
 def print_diff(test, expected):
-
     print("\n" + "=" * 40 + " expected:\n\n" + expected)
     print("\n" + "=" * 40 + " result:\n\n" + test)
     print("\n")
@@ -80,7 +77,6 @@ def assert_ast_equal(test_ast, expected_ast, print_ast=True):
 
     equal = ast_equal(test_ast, expected_ast)
     if not equal:
-
         if print_ast:
             expected_ast_str = ast.dump(expected_ast)
             test_ast_str = ast.dump(test_ast)
@@ -100,7 +96,6 @@ def check_component(
     expected_source=None,
     expected_new_bindings=None,
 ):
-
     function = Function.from_object(func)
     bindings = function.get_external_variables()
     if additional_bindings is not None:

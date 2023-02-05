@@ -18,7 +18,6 @@ from tests.utils import check_component, unindent, assert_ast_equal
 
 
 def _test_replace_returns(source, expected_source, expected_returns_ctr, expected_returns_in_loops):
-
     nodes = ast.parse(unindent(source)).body
 
     return_var = "return_var"
@@ -150,7 +149,6 @@ class TestReplaceReturns:
 
 
 def _test_build_parameter_assignments(call_str, signature_str, expected_assignments):
-
     call_node = ast.parse("func(" + call_str + ")").body[0].value
     signature_node = ast.parse("def func(" + signature_str + "):\n\tpass").body[0]
 

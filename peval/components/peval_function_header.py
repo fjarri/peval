@@ -21,7 +21,6 @@ class _peval_function_header:
 
     @staticmethod
     def handle_FunctionDef(state, node, ctx, skip_fields, walk_field, **_):
-
         # Avoid walking the body of the function
         skip_fields()
 

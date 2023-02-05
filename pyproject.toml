@@ -49,7 +49,7 @@ docs = [
 ]
 lint = [
     "mypy>=0.941",
-    "black",
+    "black>=23",
 ]
 
 [tool.setuptools]

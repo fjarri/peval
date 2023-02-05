@@ -121,7 +121,6 @@ def try_call_method(obj, name, args=(), kwds={}):
 
 
 def peval_call(state: State, ctx: Context, func, args=[], keywords=[]):
-
     assert all(type(arg) != ast.Starred for arg in args)
     assert all(kw.arg is not None for kw in keywords)
 
@@ -151,7 +150,6 @@ def peval_call(state: State, ctx: Context, func, args=[], keywords=[]):
 
 
 def try_eval_call(function, args=[], keywords=[]):
-
     args = args
     kwds = dict(keywords)
     return try_call(function, args=args, kwds=kwds)
@@ -186,7 +184,6 @@ def peval_boolop(state: State, ctx: Context, op, values):
 
 
 def peval_binop(state: State, ctx: Context, op: ast.operator, left, right):
-
     state, (peval_left, peval_right) = map_peval_expression(state, [left, right], ctx)
     unevaled_state, [unevaled_left, unevaled_right] = map_reify(state, [peval_left, peval_right])
     unevaled_node = ast.BinOp(op=op, left=unevaled_left, right=unevaled_right)
@@ -216,7 +213,6 @@ def peval_binop(state: State, ctx: Context, op: ast.operator, left, right):
 
 
 def peval_single_compare(state: State, ctx: Context, op, left, right):
-
     state, (peval_left, peval_right) = map_peval_expression(state, [left, right], ctx)
     unevaled_state, [unevaled_left, unevaled_right] = map_reify(state, [peval_left, peval_right])
     unevaled_node = ast.Compare(ops=[op], left=unevaled_left, comparators=[unevaled_right])
@@ -265,7 +261,6 @@ def peval_single_compare(state: State, ctx: Context, op, left, right):
 
 
 def peval_compare(state: State, ctx: Context, node: ast.Compare):
-
     if len(node.ops) == 1:
         return peval_single_compare(state, ctx, node.ops[0], node.left, node.comparators[0])
 
@@ -380,7 +375,6 @@ class GeneratorExpAccumulator:
 
 
 def peval_comprehension(state, node, ctx):
-
     accum_cls = {
         ast.ListComp: ListAccumulator,
         ast.GeneratorExp: GeneratorExpAccumulator,
@@ -521,7 +515,6 @@ def _try_unpack_sequence(seq, node):
 
 
 def _peval_comprehension(state, accum_cls, elt, generators, ctx):
-
     generator = generators[0]
     next_generators = generators[1:]
 
@@ -544,7 +537,6 @@ def _peval_comprehension(state, accum_cls, elt, generators, ctx):
     accum = accum_cls()
 
     for targets in iterable:
-
         unpacked, target_bindings = _try_unpack_sequence(targets, generator.target)
         if not unpacked:
             raise CannotEvaluateComprehension
@@ -671,7 +663,6 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Dict(state: State, node: ast.Dict, ctx: Context):
-
         state, pevaled = map_peval_expression(state, [node.keys, node.values], ctx)
         can_eval = all_known_values(pevaled)
 
@@ -686,7 +677,6 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_List(state: State, node: ast.List, ctx: Context):
-
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
 
@@ -699,7 +689,6 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Tuple(state: State, node: ast.Tuple, ctx: Context):
-
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
 
@@ -712,7 +701,6 @@ class _peval_expression_dispatcher:
 
     @staticmethod
     def handle_Set(state: State, node: ast.Set, ctx: Context):
-
         state, elts = map_peval_expression(state, node.elts, ctx)
         can_eval = all_known_values(elts)
 
@@ -836,7 +824,6 @@ def _peval_expression(
 def peval_expression(
     node: ast.AST, gen_sym: GenSym, bindings: Mapping[str, Any], create_binding: bool = False
 ) -> Tuple[EvaluationResult, GenSym]:
-
     ctx = Context(bindings=bindings)
     state = State(gen_sym=gen_sym, temp_bindings=ImmutableADict())
 

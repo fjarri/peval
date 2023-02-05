@@ -57,7 +57,6 @@ def get_labeled_edges(cfg):
 
 
 def render_cfg(cfg, fname):
-
     node_str = lambda node_id, label: (
         '    {node_id} [label="{label}"]'.format(node_id=node_id, label=label)
     )
