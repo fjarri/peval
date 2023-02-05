@@ -1,5 +1,6 @@
 [project]
 name = "peval"
+version = "0.2.0.dev"
 license = "MIT"
 authors = [{name = "Bogdan Opanchuk", email = "bogdan@opanchuk.net"}]
 description = "Partial evaluation on AST level"
@@ -25,7 +26,6 @@ requires-python = ">=3.8.0"
 dependencies = [
     "typing-extensions>=4.2",
 ]
-dynamic = ["version"]
 
 [project.optional-dependencies]
 astunparse = [
@@ -49,14 +49,8 @@ lint = [
 ]
 
 [build-system]
-requires = [
-    "pdm-pep517",
-    "setuptools_scm[toml]>=7",
-]
+requires = ["pdm-pep517"]
 build-backend = "pdm.pep517.api"
-
-[tool.pdm]
-version = { source = "scm" }
 
 [tool.pdm.build]
 source-includes = [
@@ -66,7 +60,7 @@ source-includes = [
     "docs/*.bat",
     "docs/Makefile",
     ".coveragerc",
-    ".mypy.ini",
+    "mypy.ini",
 ]
 
 [tool.setuptools_scm]
