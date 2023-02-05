@@ -8,6 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "peval"
 authors = [{name = "Bogdan Opanchuk", email = "bogdan@opanchuk.net"}]
+license = "MIT"
 description = "Partial evaluation on AST level"
 keywords = ["AST", "partial", "optimization"]
 readme = "README.md"
