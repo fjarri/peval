@@ -4,7 +4,7 @@ from peval.tools import unindent
 from peval.core.gensym import GenSym
 from peval.core.mangler import mangle
 
-from tests.utils import assert_ast_equal
+from utils import assert_ast_equal
 
 
 def test_mutiple_returns():

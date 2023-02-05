@@ -14,7 +14,7 @@ from peval.components.inline import (
     _build_parameter_assignments,
 )
 
-from tests.utils import check_component, unindent, assert_ast_equal
+from utils import check_component, unindent, assert_ast_equal
 
 
 def _test_replace_returns(source, expected_source, expected_returns_ctr, expected_returns_in_loops):

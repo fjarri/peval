@@ -1,0 +1,14 @@
+[run]
+branch = True
+source = peval
+
+[report]
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Exclude abstract methods
+    @abstractmethod
+
+    # Exclude overload annotations
+    @overload

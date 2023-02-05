@@ -3,7 +3,8 @@ from __future__ import print_function
 import pytest
 
 from peval.components.prune_cfg import prune_cfg
-from tests.utils import check_component
+
+from utils import check_component
 
 
 def test_if_true():

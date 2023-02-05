@@ -22,12 +22,14 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install PDM
+      run: curl -sSL https://raw.githubusercontent.com/pdm-project/pdm/main/install-pdm.py | python3
     - name: Install dependencies
       run: |
-        pip install .[tests,astunparse]
+        pdm sync -G tests -G astunparse
     - name: Test with pytest
       run: |
-        py.test --cov=peval --cov-report=xml tests
+        pdm run py.test --cov=peval --cov-report=xml tests
     - name: Upload coverage
       run: |
         curl -Os https://uploader.codecov.io/latest/linux/codecov
@@ -46,12 +48,14 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install PDM
+      run: curl -sSL https://raw.githubusercontent.com/pdm-project/pdm/main/install-pdm.py | python3
     - name: Install dependencies
       run: |
-        pip install .[tests,astor]
+        pdm sync -G tests -G astor
     - name: Test with pytest
       run: |
-        py.test --cov=peval --cov-report=xml tests
+        pdm run py.test --cov=peval --cov-report=xml tests
     - name: Upload coverage
       run: |
         curl -Os https://uploader.codecov.io/latest/linux/codecov
@@ -63,41 +67,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install PDM
+      run: curl -sSL https://raw.githubusercontent.com/pdm-project/pdm/main/install-pdm.py | python3
     - name: Install dependencies
       run: |
-        pip install .[tests]
+        pdm sync -G tests
     - name: Test with pytest
       run: |
-        py.test --cov=peval --cov-report=xml tests
+        pdm run py.test --cov=peval --cov-report=xml tests
     - name: Upload coverage
       run: |
         curl -Os https://uploader.codecov.io/latest/linux/codecov
         chmod +x codecov
         ./codecov
-
-  doctest:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.8"]
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        pip install .[tests,docs]
-    - name: Doctests with sphinx
-      run: |
-        sphinx-build -n docs/source build/sphinx -b doctest

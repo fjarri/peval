@@ -6,7 +6,7 @@ import pytest
 from peval.core.reify import KnownValue, reify, reify_unwrapped
 from peval.core.gensym import GenSym
 
-from tests.utils import assert_ast_equal
+from utils import assert_ast_equal
 
 
 def check_reify(value, expected_ast, preferred_name=None, expected_binding=None):

@@ -3,7 +3,7 @@ import pytest
 from peval.tags import pure
 from peval.components import peval_function_header
 
-from tests.utils import check_component
+from utils import check_component
 
 
 class Dummy:

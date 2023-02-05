@@ -2,7 +2,7 @@ import pytest
 
 from peval.tags import pure, get_pure_tag, inline, get_inline_tag
 
-from tests.utils import function_from_source
+from utils import function_from_source
 
 
 def test_pure_tag():

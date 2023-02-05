@@ -10,7 +10,7 @@ from peval.core.function import Function
 from peval import partial_eval, partial_apply, specialize_on, getsource, inline
 from peval.tools import unindent
 
-from tests.utils import assert_ast_equal, function_from_source
+from utils import assert_ast_equal, function_from_source
 
 
 def assert_func_equal_on(fn1, fn2, *args, **kwargs):

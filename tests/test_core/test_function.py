@@ -6,7 +6,7 @@ import inspect
 from peval.core.function import Function
 from peval.tools import unindent
 
-from tests.utils import normalize_source, function_from_source, unparser
+from utils import normalize_source, function_from_source, unparser
 
 
 global_var = 1

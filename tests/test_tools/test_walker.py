@@ -14,7 +14,7 @@ from peval.tools import (
 )
 from peval.tools.walker import _Walker
 
-from tests.utils import assert_ast_equal
+from utils import assert_ast_equal
 
 
 def get_ast(function):

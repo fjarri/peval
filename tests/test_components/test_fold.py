@@ -5,7 +5,7 @@ import pytest
 from peval.components import fold
 from peval import pure
 
-from tests.utils import check_component, function_from_source
+from utils import check_component, function_from_source
 
 
 def dummy(x):

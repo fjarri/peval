@@ -6,7 +6,8 @@ import sys
 
 from peval.tools import unparse
 from peval.core.cfg import build_cfg
-from tests.utils import print_diff, unparser
+
+from utils import print_diff, unparser
 
 RENDER_GRAPHS = False
 

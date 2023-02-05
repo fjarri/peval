@@ -7,7 +7,7 @@ from peval.core.expression import peval_expression, try_peval_expression
 from peval.core.gensym import GenSym
 from peval.tags import pure
 
-from tests.utils import assert_ast_equal
+from utils import assert_ast_equal
 
 
 def expression_ast(source):

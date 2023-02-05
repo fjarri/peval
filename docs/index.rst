@@ -84,3 +84,5 @@ API reference
 
 .. automodule:: peval
     :members:
+
+.. autoclass:: peval.tools.ImmutableADict
