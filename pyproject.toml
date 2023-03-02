@@ -1,7 +1,7 @@
 [project]
 name = "peval"
 version = "0.2.0.dev"
-license = "MIT"
+license = {text = "MIT"}
 authors = [{name = "Bogdan Opanchuk", email = "bogdan@opanchuk.net"}]
 description = "Partial evaluation on AST level"
 keywords = ["AST", "partial", "optimization"]
@@ -49,8 +49,8 @@ lint = [
 ]
 
 [build-system]
-requires = ["pdm-pep517"]
-build-backend = "pdm.pep517.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [tool.pdm.build]
 source-includes = [
